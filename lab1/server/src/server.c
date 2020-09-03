@@ -9,7 +9,7 @@ int main(int argc, char **argv) {
   logSys("Started server");
   sprintf(logBuffer, "Server Vesrion %s", VERSION);
   logSys(logBuffer);
-  parseParams();
+  parseParams(argc, argv);
   setLogLevel(4);
   return startUDPServer();
 }
@@ -23,7 +23,7 @@ int startUDPServer() {
   int MU = 1024;
   char servAddr_v4[INET_ADDRSTRLEN];
   int n = 0;
-  if ((socketfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+  if ((socketfd = socket(AF_INET, SOCK_DGRAM, 17)) < 0) {
     logFatal("Socket creation failed");
   }
   memset(&servAddr, 0, sizeof(servAddr));
@@ -39,13 +39,13 @@ int startUDPServer() {
     logFatal("Getsockname failed");
   }
 
-	inet_ntop(AF_INET, &servAddr.sin_addr, servAddr_v4, sizeof(servAddr_v4));
+  inet_ntop(AF_INET, &servAddr.sin_addr, servAddr_v4, sizeof(servAddr_v4));
 
   sprintf(logBuffer, "Binded to %s:%02d", servAddr_v4,
           ntohs(servAddr.sin_port));
   logSys(logBuffer);
   logSys("Ready for connections...");
-  if ((buffer = (char *)malloc(sizeof(char) * MU)) == NULL) { 
+  if ((buffer = (char *)malloc(sizeof(char) * MU)) == NULL) {
     logFatal("Failed to allocate memory");
   }
   n = recvfrom(socketfd, (char *)buffer, MU, MSG_WAITALL,
@@ -53,10 +53,12 @@ int startUDPServer() {
   buffer[n] = '\0';
   logInfo("Receive");
   logInfo(buffer);
+  n = sendto(socketfd, (char *)buffer, n, MSG_DONTWAIT,
+             (struct sockaddr *)&clAddr, clAddrLength);
   logSys("Stopping server...");
   close(socketfd);
   logSys("Done");
   return 0;
 }
 
-void parseParams() {}
+void parseParams(int argc, char **argv) {}
