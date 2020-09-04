@@ -5,6 +5,8 @@
 #include <string.h>
 #include <time.h>
 
+#define LOG_BUFFER_SIZE 256
+
 void logInfo(char* msg);
 void logErr(char* msg);
 void logWarn(char* msg);

@@ -1,1 +1,1 @@
-char * VERSION = "%%VERSION_RELEASE%%";
+char *VERSION = "%%VERSION_RELEASE%%";

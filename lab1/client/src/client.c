@@ -1,7 +1,7 @@
 #include <Mclient.h>
 
 extern char *VERSION;
-char logBuffer[256];
+char logBuffer[LOG_BUFFER_SIZE];
 
 int port = 0;
 char servAddr_v4[INET_ADDRSTRLEN];
@@ -24,10 +24,14 @@ int startUDPClient() {
   char *buffer = NULL;
   int MU = 1024;
   int n = 0;
+
   if ((socketfd = socket(AF_INET, SOCK_DGRAM, 17)) < 0) {
     logFatal("Socket creation failed");
   }
+
   memset(&servAddr, 0, sizeof(servAddr));
+
+  // Getting addr structure from string
   if ((host = gethostbyname(servAddr_v4)) == NULL) logFatal("Resolve failed");
   struct in_addr **addr_list = (struct in_addr **)host->h_addr_list;
   for (int i = 0; addr_list[i] != NULL; ++i) {
@@ -35,21 +39,29 @@ int startUDPClient() {
     break;
   }
 
+  // Setting the server structure for connect to him
   servAddr.sin_family = AF_INET;
   servAddr.sin_addr.s_addr = servAddr_inaddr.s_addr;
   servAddr.sin_port = htons(port);
 
+  // Getting sizeof of structures
   servAddrLength = sizeof(servAddr);
 
+  // Allocating memory for message buffer
   if ((buffer = (char *)malloc(sizeof(char) * MU)) == NULL) {
     logFatal("Failed to allocate memory");
   }
 
+  // Setting message
   strcpy(buffer, "echo");
+
+  // Sending message
   n = sendto(socketfd, (char *)buffer, strlen(buffer), MSG_DONTWAIT,
              (struct sockaddr *)&servAddr, servAddrLength);
+  // Receiving server reply
   n = recvfrom(socketfd, (char *)buffer, MU, MSG_WAITALL,
                (struct sockaddr *)&servAddr, &servAddrLength);
+  // Logging receive message
   logInfo("Receive");
   logInfo(buffer);
   logSys("Stopping client...");
