@@ -32,10 +32,12 @@ int startUDPClient() {
   char *buffer = NULL;
   int n = 0;
 
+  // Requesting socket from system
   if ((socketfd = socket(AF_INET, SOCK_DGRAM, 17)) < 0) {
     logFatal("Socket creation failed");
   }
 
+  // Clearing server configuration structure
   memset(&servAddr, 0, sizeof(servAddr));
 
   // Getting addr structure from string
@@ -63,6 +65,7 @@ int startUDPClient() {
     logFatal("Failed to allocate memory");
   }
 
+  // Clearing message
   memset(msg, 0, MU);
 
   // Constructing message
