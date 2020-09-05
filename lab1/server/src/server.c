@@ -101,11 +101,12 @@ int startUDPServer() {
     logInfo(logBuffer);
     logInfo(&msg[msgIndex]);
 
+    sprintf(&msg[msgIndex], "Ack %d [%d]", msgCode, msgUUID);
+    msgLen = msgIndex + strlen(&msg[msgIndex]);
     sprintf(logBuffer, "Send %lu (%d[%d]) from %lu", msgCode, n, msgLen,
             msgUUID);
     logInfo(logBuffer);
     logInfo(&msg[msgIndex]);
-    msgLen = msgIndex + strlen(&msg[msgIndex]);
     // Replying to client
     n = sendto(socketfd, (message_t)msg, msgLen, MSG_DONTWAIT,
                (struct sockaddr *)&clAddr, clAddrLength);
