@@ -4,6 +4,7 @@
 #include <Mlogger.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,5 +14,6 @@
 
 int startUDPServer();
 void parseParams(int argc, char **argv);
+void sighandler(int s);
 
 #endif

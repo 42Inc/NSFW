@@ -4,6 +4,11 @@
 
 extern char *VERSION;
 char logBuffer[LOG_BUFFER_SIZE];
+static int shut = 0;
+
+void sighandler(int s) {
+  while (!shut) shut = 1;
+}
 
 int main(int argc, char **argv) {
   logSys("Started server");
@@ -23,6 +28,7 @@ int startUDPServer() {
   int MU = 1024;
   char servAddr_v4[INET_ADDRSTRLEN];
   int n = 0;
+
   if ((socketfd = socket(AF_INET, SOCK_DGRAM, 17)) < 0) {
     logFatal("Socket creation failed");
   }
@@ -60,17 +66,20 @@ int startUDPServer() {
   if ((buffer = (char *)malloc(sizeof(char) * MU)) == NULL) {
     logFatal("Failed to allocate memory");
   }
+  signal(SIGINT, sighandler);
 
-  // Receiving message
-  n = recvfrom(socketfd, (char *)buffer, MU, MSG_WAITALL,
-               (struct sockaddr *)&clAddr, &clAddrLength);
-  buffer[n] = '\0';
-  logInfo("Receive");
-  logInfo(buffer);
+  while (!shut) {
+    // Receiving message
+    n = recvfrom(socketfd, (char *)buffer, MU, MSG_WAITALL,
+                 (struct sockaddr *)&clAddr, &clAddrLength);
+    buffer[n] = '\0';
+    logInfo("Receive");
+    logInfo(buffer);
 
-  // Replying to client
-  n = sendto(socketfd, (char *)buffer, n, MSG_DONTWAIT,
-             (struct sockaddr *)&clAddr, clAddrLength);
+    // Replying to client
+    n = sendto(socketfd, (char *)buffer, n, MSG_DONTWAIT,
+               (struct sockaddr *)&clAddr, clAddrLength);
+  }
 
   logSys("Stopping server...");
   close(socketfd);
