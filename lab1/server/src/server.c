@@ -3,8 +3,13 @@
 #define PORT 0
 
 extern char *VERSION;
-char logBuffer[LOG_BUFFER_SIZE];
+typedef char* message_t;
+const int msgCodeIndex = 0;
+const int msgUUIDIndex = sizeof(unsigned long int);
+const int msgIndex = 2 * sizeof(unsigned long int);
+
 static int shut = 0;
+char logBuffer[LOG_BUFFER_SIZE];
 
 void sighandler(int s) {
   while (!shut) shut = 1;
@@ -24,8 +29,11 @@ int startUDPServer() {
   struct sockaddr_in servAddr, clAddr;
   socklen_t servAddrLength = 0;
   socklen_t clAddrLength = 0;
+  message_t msg;
+  int msgLen = 0;
+  unsigned long int msgCode = 0;
+  unsigned long int msgUUID = 0;
   char *buffer = NULL;
-  int MU = 1024;
   char servAddr_v4[INET_ADDRSTRLEN];
   int n = 0;
 
@@ -63,22 +71,43 @@ int startUDPServer() {
   logSys("Ready for connections...");
 
   // Allocating memory for message buffer
-  if ((buffer = (char *)malloc(sizeof(char) * MU)) == NULL) {
+  if (MU - 2 * sizeof(unsigned long int) <= 0) {
+    logFatal("Lower MaxUnit");
+  }
+
+  if ((msg = (message_t)malloc(sizeof(char))) == NULL) {
     logFatal("Failed to allocate memory");
   }
+
+  memset(msg, 0, MU);
+
   signal(SIGINT, sighandler);
 
   while (!shut) {
     // Receiving message
-    n = recvfrom(socketfd, (char *)buffer, MU, MSG_WAITALL,
-                 (struct sockaddr *)&clAddr, &clAddrLength);
-    buffer[n] = '\0';
-    logInfo("Receive");
-    logInfo(buffer);
-
+    n = recvfrom(socketfd, (message_t)msg, MU, MSG_WAITALL, (struct sockaddr *)&clAddr,
+                 &clAddrLength);
+    if (n < 0) {
+      // logErr("Received message length <= 0");
+      continue;
+    } else if (!n) {
+      logErr("Client disconnected");
+    }
+    msgLen = n - 2 * sizeof(unsigned long int);
+    memcpy(&msgCode, &msg[msgCodeIndex], sizeof(unsigned long int));
+    memcpy(&msgUUID, &msg[msgUUIDIndex], sizeof(unsigned long int));
+    sprintf(logBuffer, "Receive %lu (%d[%d]) from %lu", msgCode, n, msgLen,
+            msgUUID);
+    logInfo(logBuffer);
+    logInfo(&msg[msgIndex]);
+    
+    sprintf(logBuffer, "Send %lu (%d[%d]) from %lu", msgCode, n, msgLen,
+            msgUUID);
+    logInfo(logBuffer);
+    logInfo(&msg[msgIndex]);
     // Replying to client
-    n = sendto(socketfd, (char *)buffer, n, MSG_DONTWAIT,
-               (struct sockaddr *)&clAddr, clAddrLength);
+    n = sendto(socketfd, (message_t)msg, MU, MSG_DONTWAIT, (struct sockaddr *)&clAddr,
+               clAddrLength);
   }
 
   logSys("Stopping server...");

@@ -1,11 +1,11 @@
 CC := gcc
-CFLAGS := 
 BIN_PATH := ./bin
 SRC_PATH := ./src
 INC_PATH := ./include
 OBJ_PATH := ./obj
 STD := -std=c99 
 DEBUG := -g3
+CFLAGS := ${DEBUG}
 
 SERVICE := server
 
@@ -31,7 +31,7 @@ VARS:
 	sed 's/%%VERSION_RELEASE%%/${VERSION_RELEASE}/g' ${SRC_PATH}/constants.c.tpl > ${SRC_PATH}/constants.c 
 
 ${SERVICE}: ${OBJECTS}
-	${CC} $^ -o ${BIN_PATH}/$@ ${STD} -I ${INC_PATH}
+	${CC} $^ -o ${BIN_PATH}/$@ ${STD} ${CFLAGS} -I ${INC_PATH}
 
 DIRECTORY: ${BIN_PATH} ${OBJ_PATH} 
 ${BIN_PATH}:
@@ -41,7 +41,7 @@ ${OBJ_PATH}:
 	$(if ifeq test -d "${OBJ_PATH}" 0, @mkdir -p ${OBJ_PATH})
 
 ${OBJ_PATH}/%.o: ${SRC_PATH}/%.c
-	${CC} -c $< -o $@ ${STD} -I ${INC_PATH}
+	${CC} -c $< -o $@ ${STD} ${CFLAGS} -I ${INC_PATH}
 
 .PHONY: clean 
 clean:

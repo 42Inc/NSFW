@@ -12,6 +12,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#define MU 1024
+#define MSG_SIZE (MU - 2 * sizeof(unsigned long int))
+
 int startUDPServer();
 void parseParams(int argc, char **argv);
 void sighandler(int s);

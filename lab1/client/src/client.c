@@ -1,9 +1,13 @@
 #include <Mclient.h>
 
 extern char *VERSION;
-char logBuffer[LOG_BUFFER_SIZE];
+typedef char *message_t;
+const int msgCodeIndex = 0;
+const int msgUUIDIndex = sizeof(unsigned long int);
+const int msgIndex = 2 * sizeof(unsigned long int);
 
 int port = 0;
+char logBuffer[LOG_BUFFER_SIZE];
 char servAddr_v4[INET_ADDRSTRLEN];
 
 int main(int argc, char **argv) {
@@ -21,8 +25,11 @@ int startUDPClient() {
   socklen_t servAddrLength = 0;
   struct in_addr servAddr_inaddr;
   struct hostent *host;
+  message_t msg;
+  int msgLen = 0;
+  unsigned long int msgCode = 0;
+  unsigned long int msgUUID = 0;
   char *buffer = NULL;
-  int MU = 1024;
   int n = 0;
 
   if ((socketfd = socket(AF_INET, SOCK_DGRAM, 17)) < 0) {
@@ -48,22 +55,40 @@ int startUDPClient() {
   servAddrLength = sizeof(servAddr);
 
   // Allocating memory for message buffer
-  if ((buffer = (char *)malloc(sizeof(char) * MU)) == NULL) {
+  if (MU - 2 * sizeof(unsigned long int) <= 0) {
+    logFatal("Lower MaxUnit");
+  }
+
+  if ((msg = (message_t)malloc(sizeof(char))) == NULL) {
     logFatal("Failed to allocate memory");
   }
 
-  // Setting message
-  strcpy(buffer, "echo");
+  memset(msg, 0, MU);
 
+  // Setting message
+  strcpy(&msg[msgIndex], "echo");
+  msgLen = MU - 2 * sizeof(unsigned long int);
+    sprintf(logBuffer, "Send %lu (%d[%d]) from %lu", msgCode, n, msgLen,
+            msgUUID);
+    logInfo(logBuffer);
+    logInfo(&msg[msgIndex]);
   // Sending message
-  n = sendto(socketfd, (char *)buffer, strlen(buffer), MSG_DONTWAIT,
+  n = sendto(socketfd, (message_t)msg, MU, MSG_DONTWAIT,
              (struct sockaddr *)&servAddr, servAddrLength);
   // Receiving server reply
-  n = recvfrom(socketfd, (char *)buffer, MU, MSG_WAITALL,
+  n = recvfrom(socketfd, (message_t)msg, MU, MSG_WAITALL,
                (struct sockaddr *)&servAddr, &servAddrLength);
-  // Logging receive message
-  logInfo("Receive");
-  logInfo(buffer);
+  if (n <= 0) {
+    logErr("Received message length <= 0");
+  } else {
+    msgLen = n - 2 * sizeof(unsigned long int);
+    memcpy(&msgCode, &msg[msgCodeIndex], sizeof(unsigned long int));
+    memcpy(&msgUUID, &msg[msgUUIDIndex], sizeof(unsigned long int));
+    sprintf(logBuffer, "Receive %lu (%d[%d]) from %lu", msgCode, n, msgLen,
+            msgUUID);
+    logInfo(logBuffer);
+    logInfo(&msg[msgIndex]);
+  }
   logSys("Stopping client...");
   close(socketfd);
   logSys("Done");

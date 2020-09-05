@@ -12,6 +12,9 @@
 #include <unistd.h>
 #include <netdb.h>
 
+#define MU 1024
+#define MSG_SIZE (MU - 2 * sizeof(unsigned long int))
+
 int startUDPClient();
 void parseParams(int argc, char **argv);
 
