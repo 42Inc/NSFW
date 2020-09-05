@@ -67,13 +67,12 @@ int startUDPClient() {
 
   // Setting message
   strcpy(&msg[msgIndex], "echo");
-  msgLen = MU - 2 * sizeof(unsigned long int);
-    sprintf(logBuffer, "Send %lu (%d[%d]) from %lu", msgCode, n, msgLen,
-            msgUUID);
-    logInfo(logBuffer);
-    logInfo(&msg[msgIndex]);
+  msgLen = msgIndex + strlen(&msg[msgIndex]);
+  sprintf(logBuffer, "Send %lu (%d[%d]) from %lu", msgCode, msgLen, strlen(&msg[msgIndex]), msgUUID);
+  logInfo(logBuffer);
+  logInfo(&msg[msgIndex]);
   // Sending message
-  n = sendto(socketfd, (message_t)msg, MU, MSG_DONTWAIT,
+  n = sendto(socketfd, (message_t)msg, msgLen, MSG_DONTWAIT,
              (struct sockaddr *)&servAddr, servAddrLength);
   // Receiving server reply
   n = recvfrom(socketfd, (message_t)msg, MU, MSG_WAITALL,

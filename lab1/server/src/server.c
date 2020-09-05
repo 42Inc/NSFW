@@ -3,7 +3,7 @@
 #define PORT 0
 
 extern char *VERSION;
-typedef char* message_t;
+typedef char *message_t;
 const int msgCodeIndex = 0;
 const int msgUUIDIndex = sizeof(unsigned long int);
 const int msgIndex = 2 * sizeof(unsigned long int);
@@ -85,29 +85,30 @@ int startUDPServer() {
 
   while (!shut) {
     // Receiving message
-    n = recvfrom(socketfd, (message_t)msg, MU, MSG_WAITALL, (struct sockaddr *)&clAddr,
-                 &clAddrLength);
+    n = recvfrom(socketfd, (message_t)msg, MU, MSG_WAITALL,
+                 (struct sockaddr *)&clAddr, &clAddrLength);
     if (n < 0) {
       // logErr("Received message length <= 0");
       continue;
     } else if (!n) {
       logErr("Client disconnected");
     }
-    msgLen = n - 2 * sizeof(unsigned long int);
+    msgLen = n - msgIndex;
     memcpy(&msgCode, &msg[msgCodeIndex], sizeof(unsigned long int));
     memcpy(&msgUUID, &msg[msgUUIDIndex], sizeof(unsigned long int));
     sprintf(logBuffer, "Receive %lu (%d[%d]) from %lu", msgCode, n, msgLen,
             msgUUID);
     logInfo(logBuffer);
     logInfo(&msg[msgIndex]);
-    
+
     sprintf(logBuffer, "Send %lu (%d[%d]) from %lu", msgCode, n, msgLen,
             msgUUID);
     logInfo(logBuffer);
     logInfo(&msg[msgIndex]);
+    msgLen = msgIndex + strlen(&msg[msgIndex]);
     // Replying to client
-    n = sendto(socketfd, (message_t)msg, MU, MSG_DONTWAIT, (struct sockaddr *)&clAddr,
-               clAddrLength);
+    n = sendto(socketfd, (message_t)msg, msgLen, MSG_DONTWAIT,
+               (struct sockaddr *)&clAddr, clAddrLength);
   }
 
   logSys("Stopping server...");
