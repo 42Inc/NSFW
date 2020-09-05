@@ -90,6 +90,7 @@ int startUDPServer() {
     if (n <= 0) {
       continue;
     }
+    // Decoding receive message
     msgLen = n - msgIndex;
     memcpy(&msgCode, &msg[msgCodeIndex], sizeof(unsigned long int));
     memcpy(&msgUUID, &msg[msgUUIDIndex], sizeof(unsigned long int));
@@ -98,13 +99,14 @@ int startUDPServer() {
     logInfo(logBuffer);
     logInfo(&msg[msgIndex]);
 
+    // Replying to client
     sprintf(&msg[msgIndex], "Ack %d [%d]", msgCode, msgUUID);
     msgLen = msgIndex + strlen(&msg[msgIndex]);
+    // Constructing reply
     sprintf(logBuffer, "Send %lu (%d[%d]) from %lu", msgCode, n, msgLen,
             msgUUID);
     logInfo(logBuffer);
     logInfo(&msg[msgIndex]);
-    // Replying to client
     n = sendto(socketfd, (message_t)msg, msgLen, MSG_DONTWAIT,
                (struct sockaddr *)&clAddr, clAddrLength);
   }

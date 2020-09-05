@@ -65,7 +65,7 @@ int startUDPClient() {
 
   memset(msg, 0, MU);
 
-  // Setting message
+  // Constructing message
   strcpy(&msg[msgIndex], "echo");
   msgLen = msgIndex + strlen(&msg[msgIndex]);
   sprintf(logBuffer, "Send %lu (%d[%d]) from %lu", msgCode, msgLen, strlen(&msg[msgIndex]), msgUUID);
@@ -80,7 +80,8 @@ int startUDPClient() {
   if (n <= 0) {
     logErr("Received message length <= 0");
   } else {
-    msgLen = n - 2 * sizeof(unsigned long int);
+    // Decoding receive message
+    msgLen = n - msgIndex;
     memcpy(&msgCode, &msg[msgCodeIndex], sizeof(unsigned long int));
     memcpy(&msgUUID, &msg[msgUUIDIndex], sizeof(unsigned long int));
     sprintf(logBuffer, "Receive %lu (%d[%d]) from %lu", msgCode, n, msgLen,
