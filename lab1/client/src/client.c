@@ -7,6 +7,7 @@ const int msgUUIDIndex = sizeof(unsigned long int);
 const int msgIndex = 2 * sizeof(unsigned long int);
 
 int port = 0;
+int count = 0;
 char logBuffer[LOG_BUFFER_SIZE];
 char servAddr_v4[INET_ADDRSTRLEN];
 
@@ -20,17 +21,22 @@ int main(int argc, char **argv) {
 }
 
 int startUDPClient() {
-  int socketfd;
   struct sockaddr_in servAddr;
   socklen_t servAddrLength = 0;
   struct in_addr servAddr_inaddr;
-  struct hostent *host;
-  message_t msg;
+  struct hostent *host = NULL;
+  struct timespec timeouts;
+  message_t msg = NULL;
+  fd_set descriptors;
+  int socketfd = -1;
   int msgLen = 0;
-  unsigned long int msgCode = 0;
-  unsigned long int msgUUID = 0;
-  char *buffer = NULL;
   int n = 0;
+  int i = 0;
+  int currentTry = 0;
+  int retval = -1;
+  unsigned long int msgUUID = 0;
+  unsigned long int msgCode = 0;
+  char *buffer = NULL;
 
   // Requesting socket from system
   if ((socketfd = socket(AF_INET, SOCK_DGRAM, 17)) < 0) {
@@ -65,32 +71,71 @@ int startUDPClient() {
     logFatal("Failed to allocate memory");
   }
 
-  // Clearing message
-  memset(msg, 0, MU);
+  // Initializing descriptors and timeouts
+  FD_ZERO(&descriptors);
+  FD_SET(socketfd, &descriptors);
+  timeouts.tv_sec = 2;
+  timeouts.tv_nsec = 0;
 
-  // Constructing message
-  strcpy(&msg[msgIndex], "echo");
-  msgLen = msgIndex + strlen(&msg[msgIndex]);
-  sprintf(logBuffer, "Send %lu (%d[%d]) from %lu", msgCode, msgLen, strlen(&msg[msgIndex]), msgUUID);
-  logInfo(logBuffer);
-  logInfo(&msg[msgIndex]);
-  // Sending message
-  n = sendto(socketfd, (message_t)msg, msgLen, MSG_DONTWAIT,
-             (struct sockaddr *)&servAddr, servAddrLength);
-  // Receiving server reply
-  n = recvfrom(socketfd, (message_t)msg, MU, MSG_WAITALL,
-               (struct sockaddr *)&servAddr, &servAddrLength);
-  if (n <= 0) {
-    logErr("Received message length <= 0");
-  } else {
-    // Decoding receive message
-    msgLen = n - msgIndex;
-    memcpy(&msgCode, &msg[msgCodeIndex], sizeof(unsigned long int));
-    memcpy(&msgUUID, &msg[msgUUIDIndex], sizeof(unsigned long int));
-    sprintf(logBuffer, "Receive %lu (%d[%d]) from %lu", msgCode, n, msgLen,
-            msgUUID);
+  for (i = 0; i < count; ++i) {
+    msgCode = i;
+    // Clearing message
+    memset(msg, 0, MU);
+
+    // Constructing message
+    memcpy(&msg[msgCodeIndex], &msgCode, sizeof(unsigned long int));
+    strcpy(&msg[msgIndex], "echo");
+    msgLen = msgIndex + strlen(&msg[msgIndex]);
+    sprintf(logBuffer, "Send %lu (%d[%d]) from %lu", msgCode, msgLen,
+            strlen(&msg[msgIndex]), msgUUID);
     logInfo(logBuffer);
     logInfo(&msg[msgIndex]);
+    // Sending message
+    n = sendto(socketfd, (message_t)msg, msgLen, MSG_DONTWAIT,
+               (struct sockaddr *)&servAddr, servAddrLength);
+
+    // Waiting data
+    retval = pselect(socketfd + 1, &descriptors, NULL, NULL, &timeouts, NULL);
+
+    if (retval) {  // Receiving server reply
+      n = recvfrom(socketfd, (message_t)msg, MU, MSG_WAITALL,
+                   (struct sockaddr *)&servAddr, &servAddrLength);
+      if (n <= 0) {
+        logErr("Received message length <= 0");
+      } else {
+        // Decoding receive message
+        msgLen = n - msgIndex;
+        memcpy(&msgCode, &msg[msgCodeIndex], sizeof(unsigned long int));
+        memcpy(&msgUUID, &msg[msgUUIDIndex], sizeof(unsigned long int));
+        sprintf(logBuffer, "Receive %lu (%d[%d]) from %lu", msgCode, n, msgLen,
+                msgUUID);
+        logInfo(logBuffer);
+        logInfo(&msg[msgIndex]);
+        if (msgCode != i) {
+          ++currentTry;
+          if (currentTry >= MAXX_TRIES) {
+            logFatal("Transmition is impossible");
+          }
+          sprintf(logBuffer,
+                  "Receive ack for wrong packet (Exept %d, Recv %d), try %d", i,
+                  msgCode, currentTry);
+          logWarn(logBuffer);
+          --i;
+          continue;
+        }
+      }
+    } else {
+      ++currentTry;
+      if (currentTry >= MAXX_TRIES) {
+        logFatal("Transmition is impossible");
+      }
+      sprintf(logBuffer, "Dont't receive ack for %d, try %d", msgCode,
+              currentTry);
+      logWarn(logBuffer);
+      --i;
+      continue;
+    }
+    sleep(1);
   }
   logSys("Stopping client...");
   close(socketfd);
@@ -99,7 +144,7 @@ int startUDPClient() {
 }
 
 void parseParams(int argc, char **argv) {
-  if (argc < 3) {
+  if (argc < 4) {
     logFatal("Not enouth params");
   }
   strcpy(servAddr_v4, argv[1]);
@@ -107,4 +152,5 @@ void parseParams(int argc, char **argv) {
   if (0xFFFF < port && port < 0x0) {
     logFatal("Port out of range");
   }
+  count = atoi(argv[3]);
 }

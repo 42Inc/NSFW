@@ -25,17 +25,17 @@ int main(int argc, char **argv) {
 }
 
 int startUDPServer() {
-  int socketfd;
   struct sockaddr_in servAddr, clAddr;
   socklen_t servAddrLength = 0;
   socklen_t clAddrLength = 0;
-  message_t msg;
+  message_t msg = NULL;
+  int socketfd = -1;
   int msgLen = 0;
-  unsigned long int msgCode = 0;
+  int n = 0;
   unsigned long int msgUUID = 0;
+  unsigned long int msgCode = 0;
   char *buffer = NULL;
   char servAddr_v4[INET_ADDRSTRLEN];
-  int n = 0;
 
   // Requesting socket from system
   if ((socketfd = socket(AF_INET, SOCK_DGRAM, 17)) < 0) {
