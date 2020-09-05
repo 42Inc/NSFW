@@ -87,11 +87,8 @@ int startUDPServer() {
     // Receiving message
     n = recvfrom(socketfd, (message_t)msg, MU, MSG_WAITALL,
                  (struct sockaddr *)&clAddr, &clAddrLength);
-    if (n < 0) {
-      // logErr("Received message length <= 0");
+    if (n <= 0) {
       continue;
-    } else if (!n) {
-      logErr("Client disconnected");
     }
     msgLen = n - msgIndex;
     memcpy(&msgCode, &msg[msgCodeIndex], sizeof(unsigned long int));
