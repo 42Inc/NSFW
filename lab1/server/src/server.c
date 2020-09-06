@@ -12,7 +12,15 @@ static int shut = 0;
 char logBuffer[LOG_BUFFER_SIZE];
 
 void sighandler(int s) {
-  while (!shut) shut = 1;
+  sprintf(logBuffer, "Received signal %d", s);
+  logSys(logBuffer);
+  switch (s) {
+    case 2:
+      while (!shut) shut = 1;
+      break;
+    default:
+      break;
+  }
 }
 
 int main(int argc, char **argv) {
