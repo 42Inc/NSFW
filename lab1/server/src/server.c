@@ -42,11 +42,10 @@ int startUDPServer() {
   int n = 0;
   unsigned long int msgUUID = 0;
   unsigned long int msgCode = 0;
-  char *buffer = NULL;
   char servAddr_v4[INET_ADDRSTRLEN];
 
   // Requesting socket from system
-  if ((socketfd = socket(AF_INET, SOCK_DGRAM, 17)) < 0) {
+  if ((socketfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0) {
     logFatal("Socket creation failed");
   }
 
