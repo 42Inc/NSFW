@@ -15,7 +15,7 @@ void sighandler(int s) {
   sprintf(logBuffer, "Received signal %d", s);
   logSys(logBuffer);
   switch (s) {
-    case 2:
+    case SIGINT:
       while (!shut) shut = 1;
       break;
     default:
