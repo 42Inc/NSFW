@@ -74,7 +74,7 @@ int startUDPServer() {
   // Transformation address to readable form
   inet_ntop(AF_INET, &servAddr.sin_addr, servAddr_v4, sizeof(servAddr_v4));
 
-  sprintf(logBuffer, "Binded to %s:%02d", servAddr_v4,
+  sprintf(logBuffer, "Binded to %s:%d", servAddr_v4,
           ntohs(servAddr.sin_port));
   logSys(logBuffer);
   logSys("Ready for connections...");
