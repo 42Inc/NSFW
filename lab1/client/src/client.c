@@ -83,6 +83,7 @@ int startUDPClient() {
 
     // Constructing message
     memcpy(&msg[msgCodeIndex], &msgCode, sizeof(unsigned long int));
+    memcpy(&msg[msgUUIDIndex], &msgUUID, sizeof(unsigned long int));
     strcpy(&msg[msgIndex], "echo");
     msgLen = msgIndex + strlen(&msg[msgIndex]);
     sprintf(logBuffer, "Send %lu (%d[%d]) from %lu", msgCode, msgLen,
@@ -106,7 +107,7 @@ int startUDPClient() {
         msgLen = n - msgIndex;
         memcpy(&msgCode, &msg[msgCodeIndex], sizeof(unsigned long int));
         memcpy(&msgUUID, &msg[msgUUIDIndex], sizeof(unsigned long int));
-        sprintf(logBuffer, "Receive %lu (%d[%d]) from %lu", msgCode, n, msgLen,
+        sprintf(logBuffer, "Receive %lu (%d[%d]) for %lu", msgCode, n, msgLen,
                 msgUUID);
         logInfo(logBuffer);
         logInfo(&msg[msgIndex]);

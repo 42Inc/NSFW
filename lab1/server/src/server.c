@@ -42,6 +42,7 @@ int startUDPServer() {
   int n = 0;
   unsigned long int msgUUID = 0;
   unsigned long int msgCode = 0;
+  unsigned long int currentClientIndex = 1;
   char servAddr_v4[INET_ADDRSTRLEN];
 
   // Requesting socket from system
@@ -74,8 +75,7 @@ int startUDPServer() {
   // Transformation address to readable form
   inet_ntop(AF_INET, &servAddr.sin_addr, servAddr_v4, sizeof(servAddr_v4));
 
-  sprintf(logBuffer, "Binded to %s:%d", servAddr_v4,
-          ntohs(servAddr.sin_port));
+  sprintf(logBuffer, "Binded to %s:%d", servAddr_v4, ntohs(servAddr.sin_port));
   logSys(logBuffer);
   logSys("Ready for connections...");
 
@@ -109,10 +109,18 @@ int startUDPServer() {
     logInfo(&msg[msgIndex]);
 
     // Replying to client
+    if (msgCode == 0) {
+      msgUUID = currentClientIndex;
+      currentClientIndex = (currentClientIndex + 1) % __INT64_MAX__;
+      if (!currentClientIndex) {
+        currentClientIndex++;
+      }
+      memcpy(&msg[msgUUIDIndex], &msgUUID, sizeof(unsigned long int));
+    }
     sprintf(&msg[msgIndex], "Ack %d [%d]", msgCode, msgUUID);
     msgLen = msgIndex + strlen(&msg[msgIndex]);
     // Constructing reply
-    sprintf(logBuffer, "Send %lu (%d[%d]) from %lu", msgCode, n, msgLen,
+    sprintf(logBuffer, "Send %lu (%d[%d]) for %lu", msgCode, n, msgLen,
             msgUUID);
     logInfo(logBuffer);
     logInfo(&msg[msgIndex]);
