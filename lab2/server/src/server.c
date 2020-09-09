@@ -3,6 +3,8 @@
 #define PORT 0
 
 extern char *VERSION;
+typedef char *message_t;
+
 const int msgCodeIndex = 0;
 const int msgUUIDIndex = sizeof(unsigned long int);
 const int msgIndex = 2 * sizeof(unsigned long int);
@@ -86,6 +88,7 @@ int startTCPServer() {
 
   while (!shut) {
     clientSocket = acceptTCPConnection(socketfd);
+
     if (clientSocket < 0) {
       continue;
     }
@@ -107,8 +110,27 @@ int startTCPServer() {
 void parseParams(int argc, char **argv) {}
 
 void clientConnection(int sock) {
-  char *msg = "test";
-  send(sock, msg, strlen(msg), 0);
+  message_t msg = NULL;
+  int sh = 0;
+  int n = 0;
+  fd_set descriptors;
+  struct timespec timeouts;
+  int retval = -1;
+  if ((msg = (message_t)malloc(sizeof(char))) == NULL) {
+    logFatal("Failed to allocate memory");
+  }
+
+  FD_ZERO(&descriptors);
+  FD_SET(sock, &descriptors);
+  timeouts.tv_sec = 1;
+  timeouts.tv_nsec = 0;
+  n = send(sock, msg, strlen(msg), 0);
+  while (!sh) {
+    retval = pselect(sock + 1, &descriptors, NULL, NULL, &timeouts, NULL);
+    if (retval) {  // Receiving server reply
+      n = recv(sock);
+    }
+  }
   close(sock);
 }
 
