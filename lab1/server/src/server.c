@@ -124,6 +124,7 @@ int startUDPServer() {
             msgUUID);
     logInfo(logBuffer);
     logInfo(&msg[msgIndex]);
+    // if (msgCode != 3)
     n = sendto(socketfd, (message_t)msg, msgLen, MSG_DONTWAIT,
                (struct sockaddr *)&clAddr, clAddrLength);
   }
