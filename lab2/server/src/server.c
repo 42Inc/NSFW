@@ -116,7 +116,7 @@ void clientConnection(int sock) {
   fd_set descriptors;
   struct timespec timeouts;
   int retval = -1;
-  if ((msg = (message_t)malloc(sizeof(char))) == NULL) {
+  if ((msg = (message_t)malloc(MU * sizeof(char))) == NULL) {
     logFatal("Failed to allocate memory");
   }
 
@@ -128,7 +128,7 @@ void clientConnection(int sock) {
   while (!sh) {
     retval = pselect(sock + 1, &descriptors, NULL, NULL, &timeouts, NULL);
     if (retval) {  // Receiving server reply
-      n = recv(sock);
+      // n = recv(sock);
     }
   }
   close(sock);

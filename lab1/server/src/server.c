@@ -84,7 +84,7 @@ int startUDPServer() {
     logFatal("Lower MaxUnit");
   }
 
-  if ((msg = (message_t)malloc(sizeof(char))) == NULL) {
+  if ((msg = (message_t)malloc(MU * sizeof(char))) == NULL) {
     logFatal("Failed to allocate memory");
   }
 
