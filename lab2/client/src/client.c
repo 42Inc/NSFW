@@ -1,4 +1,4 @@
-#include <Mclient.h>
+#include <Mclient_2.h>
 
 extern char *VERSION;
 typedef char *message_t;
