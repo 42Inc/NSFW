@@ -39,6 +39,7 @@ int startTCPServer() {
   struct sockaddr_in servAddr, clAddr;
   socklen_t servAddrLength = 0;
   socklen_t clAddrLength = 0;
+  int pid = -1;
   int socketfd = -1;
   int clientSocket = -1;
   char servAddr_v4[INET_ADDRSTRLEN];
@@ -80,7 +81,7 @@ int startTCPServer() {
   if (listen(socketfd, 10) < 0) {
     logSys("Listen failed");
   }
-
+  fcntl(socketfd, F_SETFL, FNDELAY | fcntl(socketfd, F_GETFL, 0));
   logSys("Ready for connections...");
 
   signal(SIGINT, sighandler);
@@ -92,11 +93,14 @@ int startTCPServer() {
     if (clientSocket < 0) {
       continue;
     }
-    if (!fork()) {
+    if (!(pid = fork())) {
       close(socketfd);
       clientConnection(clientSocket);
       exit(0);
     }
+
+    sprintf(logBuffer, "Create child with pid %d", pid);
+    logSys(logBuffer);
     // Parent doesn.t need this
     close(clientSocket);
   }
@@ -128,7 +132,15 @@ void clientConnection(int sock) {
   while (!sh) {
     retval = pselect(sock + 1, &descriptors, NULL, NULL, &timeouts, NULL);
     if (retval) {  // Receiving server reply
-      // n = recv(sock);
+      n = recv(sock, msg, MU, 0);
+      if (n <= 0) {
+        sh = 1;
+        break;
+      }
+      logInfo("Receive");
+      logInfo(msg);
+    } else {
+      logInfo("Not Receive");
     }
   }
   close(sock);
@@ -138,12 +150,27 @@ int acceptTCPConnection(int server_socket) {
   int connection = -1;
   struct sockaddr_in connection_addr;
   unsigned int len = sizeof(connection_addr);
-  if ((connection = accept(server_socket, (struct sockaddr *)&connection_addr,
-                           &len)) < 0) {
-    logErr("Accept failed");
+  int retval = -1;
+  fd_set descriptors;
+  struct timespec timeouts;
+  FD_ZERO(&descriptors);
+  FD_SET(server_socket, &descriptors);
+  timeouts.tv_sec = 0;
+  timeouts.tv_nsec = 1000;
+  retval =
+      pselect(server_socket + 1, &descriptors, NULL, NULL, &timeouts, NULL);
+  if (retval) {
+    if ((connection = accept(server_socket, (struct sockaddr *)&connection_addr,
+                             &len)) < 0) {
+      logErr("Accept failed");
+
+    } else {
+      sprintf(logBuffer, "Client conneted, ip: %s",
+              inet_ntoa(connection_addr.sin_addr));
+      logInfo(logBuffer);
+    }
+  } else {
+    connection = -1;
   }
-  sprintf(logBuffer, "Client conneted, ip: %s",
-          inet_ntoa(connection_addr.sin_addr));
-  logInfo(logBuffer);
   return connection;
 }
