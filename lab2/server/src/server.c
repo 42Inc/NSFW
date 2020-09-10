@@ -12,14 +12,22 @@ const int msgIndex = 2 * sizeof(unsigned long int);
 static int shut = 0;
 char logBuffer[LOG_BUFFER_SIZE];
 
-void sighandler(int s) {
-  sprintf(logBuffer, "Received signal %d", s);
+static struct sigaction act;
+static struct sigaction old;
+static sigset_t set;
+
+void sighandler(int s, siginfo_t *info, void *param) {
+  pid_t pid = info->si_pid;
+  int status = 0;
+  sprintf(logBuffer, "Received signal %d from %d", s, pid);
   logSys(logBuffer);
   switch (s) {
     case SIGINT:
       while (!shut) shut = 1;
       break;
     case SIGCHLD:
+      wait(&status);
+      // Reading exit-code
       break;
     default:
       break;
@@ -84,8 +92,18 @@ int startTCPServer() {
   fcntl(socketfd, F_SETFL, FNDELAY | fcntl(socketfd, F_GETFL, 0));
   logSys("Ready for connections...");
 
-  signal(SIGINT, sighandler);
-  signal(SIGCHLD, sighandler);
+  // signal(SIGINT, sighandler);
+  // signal(SIGCHLD, sighandler);
+
+  sigemptyset(&set);
+  sigaddset(&set, SIGCHLD);
+  sigaddset(&set, SIGINT);
+  act.sa_sigaction = sighandler;
+  act.sa_mask = set;
+  act.sa_flags = SA_NOCLDSTOP | SA_RESTART | SA_SIGINFO;
+
+  sigaction(SIGINT, &act, &old);
+  sigaction(SIGCHLD, &act, &old);
 
   while (!shut) {
     clientSocket = acceptTCPConnection(socketfd);

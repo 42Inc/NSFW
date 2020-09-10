@@ -2,8 +2,8 @@
 #define M_SERVER_H
 
 #define _GNU_SOURCE
-#include "./Mlogger_2.h"
 #include <arpa/inet.h>
+#include <fcntl.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <signal.h>
@@ -14,14 +14,15 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
-#include <fcntl.h>
+#include "./Mlogger_2.h"
 
 #define MU 1024
 
 int startTCPServer();
 void parseParams(int argc, char **argv);
-void sighandler(int s);
+void sighandler(int s, siginfo_t *info, void *param);
 void clientConnection(int sock);
 int acceptTCPConnection(int server_socket);
 
