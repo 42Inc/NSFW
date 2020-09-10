@@ -139,8 +139,6 @@ void clientConnection(int sock) {
       }
       logInfo("Receive");
       logInfo(msg);
-    } else {
-      logInfo("Not Receive");
     }
   }
   close(sock);
