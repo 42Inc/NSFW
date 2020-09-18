@@ -132,12 +132,12 @@ int startTCPServer() {
 void parseParams(int argc, char **argv) {}
 
 void clientConnection(int sock) {
-  message_t msg = NULL;
   int sh = 0;
+  int retval = -1;
   int n = 0;
+  message_t msg = NULL;
   fd_set descriptors;
   struct timespec timeouts;
-  int retval = -1;
   if ((msg = (message_t)malloc(MU * sizeof(char))) == NULL) {
     logFatal("Failed to allocate memory");
   }
@@ -146,10 +146,9 @@ void clientConnection(int sock) {
   FD_SET(sock, &descriptors);
   timeouts.tv_sec = 1;
   timeouts.tv_nsec = 0;
-  n = send(sock, msg, strlen(msg), 0);
   while (!sh) {
     retval = pselect(sock + 1, &descriptors, NULL, NULL, &timeouts, NULL);
-    if (retval) {  // Receiving server reply
+    if (retval) { 
       n = recv(sock, msg, MU, 0);
       if (n <= 0) {
         sh = 1;
@@ -157,6 +156,8 @@ void clientConnection(int sock) {
       }
       logInfo("Receive");
       logInfo(msg);
+      send(sock, msg, strlen(msg), 0);
+      logInfo("Sended echo-reply");
     }
   }
   close(sock);

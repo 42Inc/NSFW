@@ -10,6 +10,19 @@ int port = 0;
 int count = 0;
 char logBuffer[LOG_BUFFER_SIZE];
 char servAddr_v4[INET_ADDRSTRLEN];
+int sh = 0;
+
+void sighandler(int s) {
+  sprintf(logBuffer, "Received signal %d", s);
+  logSys(logBuffer);
+  switch (s) {
+    case SIGINT:
+      while (!sh) sh = 1;
+      break;
+    default:
+      break;
+  }
+}
 
 int main(int argc, char **argv) {
   logSys("Started client");
@@ -25,6 +38,11 @@ int startTCPClient() {
   socklen_t servAddrLength = 0;
   struct in_addr servAddr_inaddr;
   struct hostent *host = NULL;
+  fd_set descriptors;
+  message_t msg = NULL;
+  struct timespec timeouts;
+  int retval = -1;
+  int n = 0;
   int socketfd = -1;
 
   // Requesting socket from system
@@ -51,6 +69,41 @@ int startTCPClient() {
   // Getting sizeof of structures
   servAddrLength = sizeof(servAddr);
 
+  if ((msg = (message_t)malloc(MU * sizeof(char))) == NULL) {
+    logFatal("Failed to allocate memory");
+  }
+
+  strcpy(msg, "echo");
+
+  signal(SIGINT, sighandler);
+
+
+  if (connect(socketfd, (struct sockaddr *)&servAddr, servAddrLength)) {
+    logFatal("Failed to connect");
+  }
+
+  FD_ZERO(&descriptors);
+  FD_SET(socketfd, &descriptors);
+  timeouts.tv_sec = 1;
+  timeouts.tv_nsec = 0;
+
+  while (!sh) {
+    logInfo("Sended echo-request");
+    n = send(socketfd, msg, strlen(msg), 0);
+    
+    retval = pselect(socketfd + 1, &descriptors, NULL, NULL, &timeouts, NULL);
+    if (retval) {  
+      n = recv(socketfd, msg, MU, 0);
+      if (n <= 0) {
+        sh = 1;
+        break;
+      }
+      logInfo("Receive");
+      logInfo(msg);
+    }
+    
+    sleep(2);
+  }
   logSys("Stopping client...");
   close(socketfd);
   logSys("Done");
