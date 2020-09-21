@@ -101,6 +101,7 @@ int startTCPClient() {
         sh = 1;
         break;
       }
+      msg[n] = 0;
       logInfo("Receive");
       logInfo(msg);
     }
