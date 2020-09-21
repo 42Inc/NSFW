@@ -149,17 +149,19 @@ void clientConnection(int sock) {
   while (!sh) {
     retval = pselect(sock + 1, &descriptors, NULL, NULL, &timeouts, NULL);
     if (retval) { 
-      n = recv(sock, msg, MU, 0);
+      n = recv(sock, msg, MU - 1, 0);
       if (n <= 0) {
         sh = 1;
         break;
       }
+      msg[n] = 0;
       logInfo("Receive");
       logInfo(msg);
       send(sock, msg, strlen(msg), 0);
       logInfo("Sended echo-reply");
     }
   }
+  
   close(sock);
 }
 

@@ -90,7 +90,10 @@ int startTCPClient() {
   while (!sh) {
     logInfo("Sended echo-request");
     n = send(socketfd, msg, strlen(msg), 0);
-    
+    if (n <= 0) {
+      close(socketfd);
+      logFatal("Failed to send");
+    }
     retval = pselect(socketfd + 1, &descriptors, NULL, NULL, &timeouts, NULL);
     if (retval) {  
       n = recv(socketfd, msg, MU, 0);
