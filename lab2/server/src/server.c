@@ -148,8 +148,8 @@ void clientConnection(int sock) {
   timeouts.tv_nsec = 0;
   while (!sh) {
     retval = pselect(sock + 1, &descriptors, NULL, NULL, &timeouts, NULL);
-    if (retval) { 
-      n = recv(sock, msg, MU - 1, 0);
+    if (retval) {
+      n = recvfrom(sock, msg, MU - 1, MSG_WAITALL, NULL, NULL);
       if (n <= 0) {
         sh = 1;
         break;
@@ -157,11 +157,15 @@ void clientConnection(int sock) {
       msg[n] = 0;
       logInfo("Receive");
       logInfo(msg);
-      send(sock, msg, strlen(msg), 0);
+      n = sendto(sock, msg, strlen(msg), MSG_DONTWAIT, NULL, -1);
+      if (n <= 0) {
+        close(sock);
+        logFatal("Failed to send");
+      }
       logInfo("Sended echo-reply");
     }
   }
-  
+
   close(sock);
 }
 

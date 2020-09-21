@@ -77,7 +77,6 @@ int startTCPClient() {
 
   signal(SIGINT, sighandler);
 
-
   if (connect(socketfd, (struct sockaddr *)&servAddr, servAddrLength)) {
     logFatal("Failed to connect");
   }
@@ -89,14 +88,14 @@ int startTCPClient() {
 
   while (!sh) {
     logInfo("Sended echo-request");
-    n = send(socketfd, msg, strlen(msg), 0);
+    n = sendto(socketfd, msg, strlen(msg), MSG_DONTWAIT, NULL, -1);
     if (n <= 0) {
       close(socketfd);
       logFatal("Failed to send");
     }
     retval = pselect(socketfd + 1, &descriptors, NULL, NULL, &timeouts, NULL);
-    if (retval) {  
-      n = recv(socketfd, msg, MU, 0);
+    if (retval) {
+      n = recvfrom(socketfd, msg, MU, MSG_WAITALL, NULL, NULL);
       if (n <= 0) {
         sh = 1;
         break;
@@ -105,7 +104,7 @@ int startTCPClient() {
       logInfo("Receive");
       logInfo(msg);
     }
-    
+
     sleep(2);
   }
   logSys("Stopping client...");
