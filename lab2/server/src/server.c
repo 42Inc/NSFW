@@ -168,8 +168,8 @@ void clientConnection(int sock) {
     // sigaction(SIGINT, &act, &old);
     // retval = select(sock + 1, &descriptors, NULL, NULL, &timeouts);
 
-    sprintf(logBuffer, "Pselect return %d", retval);
-    logInfo(logBuffer);
+    // sprintf(logBuffer, "Pselect return %d", retval);
+    // logInfo(logBuffer);
     if (retval < 0 && errno != EINTR) {
       close(sock);
       logFatal("Failed to pselect from socket");
