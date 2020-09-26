@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <errno.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,9 +17,10 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <pthread.h>
 #include "./Mlogger_2.h"
 
-#define MU 1024
+#define MU 256
 
 int startTCPServer();
 void parseParams(int argc, char **argv);

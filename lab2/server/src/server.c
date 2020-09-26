@@ -18,7 +18,7 @@ static sigset_t set;
 
 void sighandler(int s, siginfo_t *info, void *param) {
   pid_t pid = info->si_pid;
-  int status = 0;
+  // int status = 0;
   sprintf(logBuffer, "Received signal %d from %d", s, pid);
   logSys(logBuffer);
   switch (s) {
@@ -26,11 +26,18 @@ void sighandler(int s, siginfo_t *info, void *param) {
       while (!shut) shut = 1;
       break;
     case SIGCHLD:
-      wait(&status);
+      // wait(&status);
       // Reading exit-code
       break;
     default:
       break;
+  }
+}
+
+void *waiter(void *args) {
+  int status = 0;
+  while (!shut) {
+    wait(&status);
   }
 }
 
@@ -92,18 +99,22 @@ int startTCPServer() {
   fcntl(socketfd, F_SETFL, FNDELAY | fcntl(socketfd, F_GETFL, 0));
   logSys("Ready for connections...");
 
+  sprintf(logBuffer, "Sever socket %d", socketfd);
+  logSys(logBuffer);
   // signal(SIGINT, sighandler);
   // signal(SIGCHLD, sighandler);
 
   sigemptyset(&set);
-  sigaddset(&set, SIGCHLD);
+  // sigaddset(&set, SIGCHLD);
   sigaddset(&set, SIGINT);
   act.sa_sigaction = sighandler;
   act.sa_mask = set;
   act.sa_flags = SA_NOCLDSTOP | SA_RESTART | SA_SIGINFO;
 
   sigaction(SIGINT, &act, &old);
-  sigaction(SIGCHLD, &act, &old);
+  // sigaction(SIGCHLD, &act, &old);
+  pthread_t waiter_tid;
+  pthread_create(&waiter_tid, NULL, waiter, NULL);
 
   while (!shut) {
     clientSocket = acceptTCPConnection(socketfd);
@@ -124,6 +135,7 @@ int startTCPServer() {
   }
 
   logSys("Stopping server...");
+  pthread_join(waiter_tid, NULL);
   close(socketfd);
   logSys("Done");
   return 0;
@@ -138,35 +150,55 @@ void clientConnection(int sock) {
   message_t msg = NULL;
   fd_set descriptors;
   struct timespec timeouts;
+  // struct timeval timeouts;
   if ((msg = (message_t)malloc(MU * sizeof(char))) == NULL) {
     logFatal("Failed to allocate memory");
   }
 
-  FD_ZERO(&descriptors);
-  FD_SET(sock, &descriptors);
+  sprintf(logBuffer, "Processing socket %d", sock);
+  logInfo(logBuffer);
   timeouts.tv_sec = 1;
+  // timeouts.tv_usec = 0;
   timeouts.tv_nsec = 0;
   while (!sh) {
+    FD_ZERO(&descriptors);
+    FD_SET(sock, &descriptors);
+    // sigaction(SIGINT, &old, &act);
     retval = pselect(sock + 1, &descriptors, NULL, NULL, &timeouts, NULL);
+    // sigaction(SIGINT, &act, &old);
+    // retval = select(sock + 1, &descriptors, NULL, NULL, &timeouts);
+
+    sprintf(logBuffer, "Pselect return %d", retval);
+    logInfo(logBuffer);
+    if (retval < 0 && errno != EINTR) {
+      close(sock);
+      logFatal("Failed to pselect from socket");
+    }
     if (retval) {
-      n = recvfrom(sock, msg, MU - 1, MSG_WAITALL, NULL, NULL);
+      n = recvfrom(sock, msg, MU, MSG_WAITALL, NULL, NULL);
       if (n <= 0) {
         sh = 1;
         break;
       }
       msg[n] = 0;
+      sprintf(logBuffer, "Received %d bytes", n);
+      logInfo(logBuffer);
       logInfo("Receive");
       logInfo(msg);
-      n = sendto(sock, msg, strlen(msg), MSG_DONTWAIT, NULL, -1);
+      n = sendto(sock, msg, MU, MSG_DONTWAIT, NULL, -1);
       if (n <= 0) {
         close(sock);
         logFatal("Failed to send");
       }
       logInfo("Sended echo-reply");
+      sprintf(logBuffer, "Sended %d bytes", n);
+      logInfo(logBuffer);
     }
   }
 
+  logSys("Stopping connection...");
   close(sock);
+  logSys("Done");
 }
 
 int acceptTCPConnection(int server_socket) {

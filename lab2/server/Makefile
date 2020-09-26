@@ -5,7 +5,7 @@ INC_PATH := ./include
 OBJ_PATH := ./obj
 STD := -std=c99 
 DEBUG := -g3
-CFLAGS := ${DEBUG}
+CFLAGS := ${DEBUG} -pthread
 
 SERVICE := server
 
@@ -23,7 +23,7 @@ GIT_COMMIT_DATE := $(shell git show -s --format=%ci | cut -d\  -f1)
 VERSION_RELEASE := ${GIT_TAG}.${GIT_COMMIT}
 
 
-.PHONY: all 
+.PHONY: all
 .PHONY: DIRECTORY 
 all: DIRECTORY VARS ${SERVICE}
 

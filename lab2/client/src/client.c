@@ -41,6 +41,7 @@ int startTCPClient() {
   fd_set descriptors;
   message_t msg = NULL;
   struct timespec timeouts;
+  // struct timeval timeouts;
   int retval = -1;
   int n = 0;
   int socketfd = -1;
@@ -81,19 +82,29 @@ int startTCPClient() {
     logFatal("Failed to connect");
   }
 
-  FD_ZERO(&descriptors);
-  FD_SET(socketfd, &descriptors);
   timeouts.tv_sec = 1;
+  // timeouts.tv_usec = 0;
   timeouts.tv_nsec = 0;
 
   while (!sh) {
     logInfo("Sended echo-request");
-    n = sendto(socketfd, msg, strlen(msg), MSG_DONTWAIT, NULL, -1);
+    n = sendto(socketfd, msg, MU, MSG_DONTWAIT, NULL, -1);
     if (n <= 0) {
       close(socketfd);
       logFatal("Failed to send");
     }
+    sprintf(logBuffer, "Sended %d bytes", n);
+    logInfo(logBuffer);
+    // signal(SIGINT, NULL);
+    FD_ZERO(&descriptors);
+    FD_SET(socketfd, &descriptors);
     retval = pselect(socketfd + 1, &descriptors, NULL, NULL, &timeouts, NULL);
+    // retval = select(socketfd + 1, &descriptors, NULL, NULL, &timeouts);
+    // signal(SIGINT, sighandler);
+    if (retval < 0 && errno != EINTR) {
+      close(socketfd);
+      logFatal("Failed to pselect from socket");
+    }
     if (retval) {
       n = recvfrom(socketfd, msg, MU, MSG_WAITALL, NULL, NULL);
       if (n <= 0) {
@@ -101,6 +112,8 @@ int startTCPClient() {
         break;
       }
       msg[n] = 0;
+      sprintf(logBuffer, "Received %d bytes", n);
+      logInfo(logBuffer);
       logInfo("Receive");
       logInfo(msg);
     }

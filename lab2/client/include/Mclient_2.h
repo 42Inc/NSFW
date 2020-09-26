@@ -5,6 +5,7 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <netdb.h>
+#include <errno.h>
 #include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,7 +18,7 @@
 #include <unistd.h>
 #include "./Mlogger_2.h"
 
-#define MU 1024
+#define MU 256
 
 int startTCPClient();
 void parseParams(int argc, char **argv);
