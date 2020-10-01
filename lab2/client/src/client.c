@@ -10,7 +10,7 @@ char servAddr_v4[INET_ADDRSTRLEN];
 int sh = 0;
 
 message_t defMessage = "echo";
-  message_t msg = NULL;
+message_t msg = NULL;
 
 void sighandler(int s) {
   sprintf(logBuffer, "Received signal %d", s);
@@ -92,12 +92,11 @@ int startTCPClient() {
     FD_ZERO(&descriptors);
     FD_SET(socketfd, &descriptors);
     retval = pselect(socketfd + 1, &descriptors, NULL, NULL, &timeouts, NULL);
- 
+
     if (retval < 0 && errno != EINTR) {
       close(socketfd);
       logFatal("Failed to pselect from socket");
-    }
-    if (retval) {
+    } else if (retval && errno != EINTR) {
       n = recvfrom(socketfd, msg, MU, MSG_WAITALL, NULL, NULL);
       if (n <= 0) {
         sh = 1;
@@ -127,7 +126,6 @@ void parseParams(int argc, char **argv) {
   if (0xFFFF < port && port < 0x0) {
     logFatal("Port out of range");
   }
-
 
   if ((msg = (message_t)malloc(MU * sizeof(char))) == NULL) {
     logFatal("Failed to allocate memory");

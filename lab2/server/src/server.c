@@ -6,6 +6,8 @@ extern char *VERSION;
 typedef char *message_t;
 
 static int shut = 0;
+static int childs = 0;
+pthread_mutex_t childsLocker = PTHREAD_MUTEX_INITIALIZER;
 char logBuffer[LOG_BUFFER_SIZE];
 
 static struct sigaction act;
@@ -33,7 +35,12 @@ void sighandler(int s, siginfo_t *info, void *param) {
 void *waiter(void *args) {
   int status = 0;
   while (!shut) {
-    wait(&status);
+    if (childs > 0) {
+      wait(&status);
+      pthread_mutex_lock(&childsLocker);
+      --childs;
+      pthread_mutex_unlock(&childsLocker);
+    }
   }
 }
 
@@ -97,7 +104,6 @@ int startTCPServer() {
 
   sprintf(logBuffer, "Sever socket %d", socketfd);
   logSys(logBuffer);
-  
 
   sigemptyset(&set);
   sigaddset(&set, SIGINT);
@@ -122,6 +128,11 @@ int startTCPServer() {
     }
 
     sprintf(logBuffer, "Create child with pid %d", pid);
+    if (pid > 0) {
+      pthread_mutex_lock(&childsLocker);
+      ++childs;
+      pthread_mutex_unlock(&childsLocker);
+    }
     logSys(logBuffer);
     // Parent doesn.t need this
     close(clientSocket);
@@ -161,8 +172,7 @@ void clientConnection(int sock) {
     if (retval < 0 && errno != EINTR) {
       close(sock);
       logFatal("Failed to pselect from socket");
-    }
-    if (retval) {
+    } else if (retval && errno != EINTR) {
       n = recvfrom(sock, msg, MU, MSG_WAITALL, NULL, NULL);
       if (n <= 0) {
         sh = 1;
