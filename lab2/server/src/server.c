@@ -22,8 +22,8 @@ void sighandler(int s, siginfo_t *info, void *param) {
       while (!shut) shut = 1;
       break;
     case SIGCHLD:
-      // wait(&status);
       // Reading exit-code
+      // wait(&status);
       break;
     default:
       break;
@@ -97,18 +97,15 @@ int startTCPServer() {
 
   sprintf(logBuffer, "Sever socket %d", socketfd);
   logSys(logBuffer);
-  // signal(SIGINT, sighandler);
-  // signal(SIGCHLD, sighandler);
+  
 
   sigemptyset(&set);
-  // sigaddset(&set, SIGCHLD);
   sigaddset(&set, SIGINT);
   act.sa_sigaction = sighandler;
   act.sa_mask = set;
   act.sa_flags = SA_NOCLDSTOP | SA_RESTART | SA_SIGINFO;
 
   sigaction(SIGINT, &act, &old);
-  // sigaction(SIGCHLD, &act, &old);
   pthread_t waiter_tid;
   pthread_create(&waiter_tid, NULL, waiter, NULL);
 
@@ -146,7 +143,7 @@ void clientConnection(int sock) {
   message_t msg = NULL;
   fd_set descriptors;
   struct timespec timeouts;
-  // struct timeval timeouts;
+
   if ((msg = (message_t)malloc(MU * sizeof(char))) == NULL) {
     logFatal("Failed to allocate memory");
   }
@@ -154,18 +151,13 @@ void clientConnection(int sock) {
   sprintf(logBuffer, "Processing socket %d", sock);
   logInfo(logBuffer);
   timeouts.tv_sec = 1;
-  // timeouts.tv_usec = 0;
   timeouts.tv_nsec = 0;
+
   while (!sh) {
     FD_ZERO(&descriptors);
     FD_SET(sock, &descriptors);
-    // sigaction(SIGINT, &old, &act);
     retval = pselect(sock + 1, &descriptors, NULL, NULL, &timeouts, NULL);
-    // sigaction(SIGINT, &act, &old);
-    // retval = select(sock + 1, &descriptors, NULL, NULL, &timeouts);
 
-    // sprintf(logBuffer, "Pselect return %d", retval);
-    // logInfo(logBuffer);
     if (retval < 0 && errno != EINTR) {
       close(sock);
       logFatal("Failed to pselect from socket");

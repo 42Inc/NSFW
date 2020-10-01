@@ -40,7 +40,7 @@ int startTCPClient() {
   struct hostent *host = NULL;
   fd_set descriptors;
   struct timespec timeouts;
-  // struct timeval timeouts;
+
   int retval = -1;
   int n = 0;
   int i = 0;
@@ -77,7 +77,6 @@ int startTCPClient() {
   }
 
   timeouts.tv_sec = 1;
-  // timeouts.tv_usec = 0;
   timeouts.tv_nsec = 0;
 
   while (!sh && i++ < 3) {
@@ -89,12 +88,11 @@ int startTCPClient() {
     }
     sprintf(logBuffer, "Sended %d bytes", n);
     logInfo(logBuffer);
-    // signal(SIGINT, NULL);
+
     FD_ZERO(&descriptors);
     FD_SET(socketfd, &descriptors);
     retval = pselect(socketfd + 1, &descriptors, NULL, NULL, &timeouts, NULL);
-    // retval = select(socketfd + 1, &descriptors, NULL, NULL, &timeouts);
-    // signal(SIGINT, sighandler);
+ 
     if (retval < 0 && errno != EINTR) {
       close(socketfd);
       logFatal("Failed to pselect from socket");
