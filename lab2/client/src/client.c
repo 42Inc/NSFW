@@ -2,15 +2,15 @@
 
 extern char *VERSION;
 typedef char *message_t;
-const int msgCodeIndex = 0;
-const int msgUUIDIndex = sizeof(unsigned long int);
-const int msgIndex = 2 * sizeof(unsigned long int);
 
 int port = 0;
 int count = 0;
 char logBuffer[LOG_BUFFER_SIZE];
 char servAddr_v4[INET_ADDRSTRLEN];
 int sh = 0;
+
+message_t defMessage = "echo";
+  message_t msg = NULL;
 
 void sighandler(int s) {
   sprintf(logBuffer, "Received signal %d", s);
@@ -39,11 +39,11 @@ int startTCPClient() {
   struct in_addr servAddr_inaddr;
   struct hostent *host = NULL;
   fd_set descriptors;
-  message_t msg = NULL;
   struct timespec timeouts;
   // struct timeval timeouts;
   int retval = -1;
   int n = 0;
+  int i = 0;
   int socketfd = -1;
 
   // Requesting socket from system
@@ -70,12 +70,6 @@ int startTCPClient() {
   // Getting sizeof of structures
   servAddrLength = sizeof(servAddr);
 
-  if ((msg = (message_t)malloc(MU * sizeof(char))) == NULL) {
-    logFatal("Failed to allocate memory");
-  }
-
-  strcpy(msg, "echo");
-
   signal(SIGINT, sighandler);
 
   if (connect(socketfd, (struct sockaddr *)&servAddr, servAddrLength)) {
@@ -86,7 +80,7 @@ int startTCPClient() {
   // timeouts.tv_usec = 0;
   timeouts.tv_nsec = 0;
 
-  while (!sh) {
+  while (!sh && i++ < 3) {
     logInfo("Sended echo-request");
     n = sendto(socketfd, msg, MU, MSG_DONTWAIT, NULL, -1);
     if (n <= 0) {
@@ -127,7 +121,7 @@ int startTCPClient() {
 }
 
 void parseParams(int argc, char **argv) {
-  if (argc < 3) {
+  if (argc < 4) {
     logFatal("Not enouth params");
   }
   strcpy(servAddr_v4, argv[1]);
@@ -135,4 +129,10 @@ void parseParams(int argc, char **argv) {
   if (0xFFFF < port && port < 0x0) {
     logFatal("Port out of range");
   }
+
+
+  if ((msg = (message_t)malloc(MU * sizeof(char))) == NULL) {
+    logFatal("Failed to allocate memory");
+  }
+  strcpy(msg, argv[3]);
 }

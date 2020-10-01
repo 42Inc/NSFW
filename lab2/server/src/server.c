@@ -5,10 +5,6 @@
 extern char *VERSION;
 typedef char *message_t;
 
-const int msgCodeIndex = 0;
-const int msgUUIDIndex = sizeof(unsigned long int);
-const int msgIndex = 2 * sizeof(unsigned long int);
-
 static int shut = 0;
 char logBuffer[LOG_BUFFER_SIZE];
 
