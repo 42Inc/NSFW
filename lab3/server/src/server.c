@@ -114,7 +114,7 @@ int startMultiServer() {
   // Setting the server structure
   servAddrUDP.sin_family = AF_INET;
   servAddrUDP.sin_addr.s_addr = INADDR_ANY;
-  servAddrUDP.sin_port = htons(PORT);
+  servAddrUDP.sin_port = servAddrTCP.sin_port;
 
   // Binding socket
   if (bind(socketfdUDP, (const struct sockaddr *)&servAddrUDP,
@@ -236,6 +236,7 @@ int acceptConnection(int sTCP, int sUDP) {
   int retval = -1;
   int n = 0;
   int max_s = MAX(sTCP, sUDP) + 1;
+  unsigned long int msgCode = 0;
   fd_set descriptors;
   struct timespec timeouts;
   pthread_t pid;
@@ -271,6 +272,8 @@ int acceptConnection(int sTCP, int sUDP) {
     } else if (FD_ISSET(sUDP, &descriptors)) {
       n = recvfrom(sUDP, (message_t)msg, MU, MSG_WAITALL,
                    (struct sockaddr *)&clAddrUDP, &clAddrUDPLength);
+
+      memcpy(&msgCode, &msg[msgCodeIndex], sizeof(unsigned long int));
       if (n <= 0) {
         logErr("UDP Received message length <= 0");
       } else {
@@ -279,8 +282,10 @@ int acceptConnection(int sTCP, int sUDP) {
         logInfo("UDP Receive");
         logInfo(&msg[msgIndex]);
       }
-      n = sendto(sUDP, (message_t)msg, MU, MSG_DONTWAIT,
-                 (struct sockaddr *)&clAddrUDP, clAddrUDPLength);
+
+      if (msgCode != 3)
+        n = sendto(sUDP, (message_t)msg, MU, MSG_DONTWAIT,
+                   (struct sockaddr *)&clAddrUDP, clAddrUDPLength);
     }
   } else {
     connection = -1;
