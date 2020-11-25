@@ -1,4 +1,5 @@
 #include "./../include/Mclient_2.h"
+#include "./../include/colorlib.h"
 
 extern char *VERSION;
 typedef char *message_t;
@@ -26,7 +27,6 @@ void sighandler(int s) {
 
 int main(int argc, char **argv) {
   logSys("Started client");
-  sprintf(logBuffer, "Client Vesrion %s", VERSION);
   logSys(logBuffer);
   parseParams(argc, argv);
   setLogLevel(4);

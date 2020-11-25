@@ -1,4 +1,5 @@
 #include "./../include/Mserver_2.h"
+#include "./../include/colorlib.h"
 
 #define PORT 0
 
@@ -46,7 +47,6 @@ void *waiter(void *args) {
 
 int main(int argc, char **argv) {
   logSys("Started server");
-  sprintf(logBuffer, "Server Vesrion %s", VERSION);
   logSys(logBuffer);
   parseParams(argc, argv);
   setLogLevel(4);

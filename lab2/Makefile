@@ -1,13 +1,13 @@
 .PHONY: all build 
-all: build 
+all: build
 build:
 	make -C server
 	make -C client
 
-.PHONY: clean 
+.PHONY: clean
 clean:
 	make -C server clean
 	make -C client clean
 
-.PHONY: restruct 
+.PHONY: restruct
 restruct: clean all
