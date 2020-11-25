@@ -1,36 +1,38 @@
 #include "./../include/Mlogger.h"
+#include "./../include/colorlib.h"
+
 static FILE* stream = NULL;
 static int level = 2;
 
 void logInfo(char* msg) {
   char* date = getDate();
   if (level > 3) {
-    fprintf(stream ? stream : stderr, "%s [INFO]: %s\n", date, msg);
+    fprintf(stream ? stream : stderr, "%s[INFO]%s %s: %s\n", BLUE, RESET, date, msg);
   }
 }
 
 void logErr(char* msg) {
   char* date = getDate();
   if (level > 1) {
-    fprintf(stream ? stream : stderr, "%s [ERROR]: %s\n", date, msg);
+    fprintf(stream ? stream : stderr, "%s[ERROR]%s %s: %s\n", RED, RESET, date, msg);
   }
 }
 
 void logWarn(char* msg) {
   char* date = getDate();
   if (level > 2) {
-    fprintf(stream ? stream : stderr, "%s [WARN]: %s\n", date, msg);
+    fprintf(stream ? stream : stderr, "%s[WARN]%s %s: %s\n", YELLOW, RESET, date, msg);
   }
 }
 
 void logSys(char* msg) {
   char* date = getDate();
-  fprintf(stream ? stream : stderr, "%s [SYS]: %s\n", date, msg);
+  fprintf(stream ? stream : stderr, "%s[SYS]%s %s: %s\n", GREEN, RESET, date, msg);
 }
 
 void logFatal(char* msg) {
   char* date = getDate();
-  fprintf(stream ? stream : stderr, "%s [FATAL]: %s\n", date, msg);
+  fprintf(stream ? stream : stderr, "%s[FATAL]%s %s: %s\n", RED, RESET, date, msg);
   exit(1);
 }
 

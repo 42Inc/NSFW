@@ -39,7 +39,6 @@ void sighandler(int s, siginfo_t *info, void *param) {
 
 int main(int argc, char **argv) {
   logSys("Started server");
-  sprintf(logBuffer, "Server Vesrion %s", VERSION);
   logSys(logBuffer);
   parseParams(argc, argv);
   setLogLevel(4);
@@ -259,10 +258,10 @@ int acceptConnection(int sTCP, int sUDP) {
     if (FD_ISSET(sTCP, &descriptors)) {
       if ((connection =
                accept(sTCP, (struct sockaddr *)&connection_addr, &len)) < 0) {
+        logErr("Accept failed");
       } else {
         sprintf(logBuffer, "TCP client conneted, ip: %s",
                 inet_ntoa(connection_addr.sin_addr));
-        logErr("Accept failed");
         params_t p;
         p.sock = connection;
         logInfo(logBuffer);

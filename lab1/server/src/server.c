@@ -25,7 +25,6 @@ void sighandler(int s) {
 
 int main(int argc, char **argv) {
   logSys("Started server");
-  sprintf(logBuffer, "Server Vesrion %s", VERSION);
   logSys(logBuffer);
   parseParams(argc, argv);
   setLogLevel(4);

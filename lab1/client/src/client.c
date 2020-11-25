@@ -13,7 +13,6 @@ char servAddr_v4[INET_ADDRSTRLEN];
 
 int main(int argc, char **argv) {
   logSys("Started client");
-  sprintf(logBuffer, "Client Vesrion %s", VERSION);
   logSys(logBuffer);
   parseParams(argc, argv);
   setLogLevel(4);
