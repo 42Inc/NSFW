@@ -42,7 +42,7 @@ void rmpi_set_log_level(int l) {
   level = l < 0 ? 0 : l;
   char str[32];
   sprintf(str, "Set Log level to %d", l);
-  logSys(str);
+  rmpi_log_sys(str);
 }
 
 void rmpi_close_log_file(char* file) {
