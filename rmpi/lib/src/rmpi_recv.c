@@ -5,11 +5,11 @@ static char log_buffer[LOG_BUFFER_SIZE];
 int32_t rmpi_recv(void *msg, int64_t count, size_t type, int64_t src,
                   int64_t tag, comm_t comm) {
   if (!comm) {
-    logFatal("Communicator is NULL");
+    rmpi_log_fatal("Communicator is NULL");
   }
   sprintf(log_buffer, "Rank %d receiving message with size %d from %d",
           comm->myrank, type * count, src);
-  logInfo(log_buffer);
+  rmpi_log_info(log_buffer);
 
   int64_t index = rmpi_get_index_by_rank(src, comm);
 

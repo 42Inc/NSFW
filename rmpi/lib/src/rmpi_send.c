@@ -5,11 +5,11 @@ static char log_buffer[LOG_BUFFER_SIZE];
 int32_t rmpi_send(void *msg, int64_t count, size_t type, int64_t dst,
                   int64_t tag, comm_t comm) {
   if (!comm) {
-    logFatal("Communicator is NULL");
+    rmpi_log_fatal("Communicator is NULL");
   }
   sprintf(log_buffer, "Rank %d sending message with size %d to %d",
           comm->myrank, type * count, dst);
-  logInfo(log_buffer);
+  rmpi_log_info(log_buffer);
 
   struct sockaddr_in client_addr;
   socklen_t client_addr_length = sizeof(client_addr);

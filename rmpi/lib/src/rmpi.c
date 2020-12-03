@@ -38,7 +38,7 @@ comm_t rmpi_get_comm_world() { return COMM_WORLD; }
 void rmpi_print_comm(comm_t comm) {
   int64_t i = 0;
   if (!comm) {
-    logFatal("Communicator is NULL");
+    rmpi_log_fatal("Communicator is NULL");
   }
   sprintf(log_buffer, "Commsize: %d", comm->commsize);
   rmpi_log_info(log_buffer);
@@ -56,20 +56,20 @@ void rmpi_print_comm(comm_t comm) {
 
 void rmpi_parse_params(int *argc, char ***argv) {
   if (*argc < 3) {
-    logFatal("Not enouth args");
+    rmpi_log_fatal("Not enouth args");
   }
-  COMM_WORLD = (comm_t *)malloc(sizeof(comm_t));
+  COMM_WORLD = (comm_t)malloc(sizeof(comm_t));
   if (!COMM_WORLD) {
-    logFatal("Cannot create world communicator");
+    rmpi_log_fatal("Cannot create world communicator");
   }
   int64_t rank = atol((*argv)[1]);
   int64_t comm = atol((*argv)[2]);
   int64_t i = 0;
   if (*argc < comm + 1) {
-    logFatal("Not enouth hosts");
+    rmpi_log_fatal("Not enouth hosts");
   }
   if (0 > rank || rank >= comm) {
-    logFatal("Incorrect rank");
+    rmpi_log_fatal("Incorrect rank");
   }
 
   sprintf(log_buffer, "Initializing %d processes", comm);
@@ -88,9 +88,9 @@ void rmpi_parse_params(int *argc, char ***argv) {
   }
   *argc = *argc - (2 + comm);
   if (*argc > 0) {
-    char *prog = argv[0];
+    char *prog = (*argv)[0];
     *argv = &((*argv)[2 + comm]);
-    strcpy(&(*argv)[0], prog);
+    (*argv)[0] = prog;
   }
 }
 
@@ -120,7 +120,7 @@ int32_t rmpi_create_client_socket(int64_t rank, comm_t comm) {
   }
   // Requesting socket from system
   if ((socketfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0) {
-    logFatal("Socket creation failed");
+    rmpi_log_fatal("Socket creation failed");
   }
   comm->hosts[index].server_addr_length =
       sizeof(comm->hosts[index].server_addr);
@@ -130,7 +130,7 @@ int32_t rmpi_create_client_socket(int64_t rank, comm_t comm) {
 
   // Getting addr structure from string
   if ((host = gethostbyname(comm->hosts[index].host.addr)) == NULL)
-    logFatal("Resolve failed");
+    rmpi_log_fatal("Resolve failed");
   struct in_addr **addr_list = (struct in_addr **)host->h_addr_list;
   for (int i = 0; addr_list[i] != NULL; ++i) {
     server_addr_inaddr = *addr_list[i];
@@ -153,7 +153,7 @@ int32_t rmpi_create_server_socket() {
 
   // Requesting socket from system
   if ((socketfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0) {
-    logFatal("Socket creation failed");
+    rmpi_log_fatal("Socket creation failed");
   }
 
   // Getting sizeof of structures
@@ -169,12 +169,12 @@ int32_t rmpi_create_server_socket() {
   // Binding socket
   if (bind(socketfd, (const struct sockaddr *)&serv_addr, serv_addr_length) <
       0) {
-    logFatal("Bind failed");
+    rmpi_log_fatal("Bind failed");
   }
 
   // Getting socket params
   if (getsockname(socketfd, (struct sockaddr *)&serv_addr, &serv_addr_length)) {
-    logFatal("Getsockname failed");
+    rmpi_log_fatal("Getsockname failed");
   }
 
   // Transformation address to readable form
@@ -204,7 +204,7 @@ char **get_port(indata_p) int *indata_p;
 
 void rmpi_get_ports(comm_t comm) {
   if (!comm) {
-    logFatal("Communicator is NULL");
+    rmpi_log_fatal("Communicator is NULL");
   }
   int64_t i = 0;
   for (i = 0; i < comm->commsize; ++i) {
@@ -233,7 +233,7 @@ int32_t rmpi_get_port(char *host, int64_t rank) {
   if (i >= RMTTRIESLIMIT) {
     sprintf(log_buffer, "Failed call rpc, rank %d to %d on %s",
             COMM_WORLD->myrank, rank, host);
-    logFatal(log_buffer);
+    rmpi_log_fatal(log_buffer);
   }
   return atoi(answer);
 }
