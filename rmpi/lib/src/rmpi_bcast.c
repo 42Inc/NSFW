@@ -3,14 +3,14 @@
 static char log_buffer[LOG_BUFFER_SIZE];
 
 int32_t rmpi_bcast(void *msg, int64_t count, size_t type, int64_t src,
-                   int64_t tag, comm_t comm) {
+                   int64_t tag, rmpi_comm_t comm) {
   if (!comm) {
     rmpi_log_fatal("Communicator is NULL");
   }
 
   int64_t i = 0;
   if (src == comm->myrank) {
-    sprintf(log_buffer, "Rank %d broadcating message with size %d to all",
+    sprintf(log_buffer, "Rank %d broadcasting message with size %d to all",
             comm->myrank, type * count);
     rmpi_log_info(log_buffer);
     for (i = 0; i < comm->commsize; ++i) {

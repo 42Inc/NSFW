@@ -1,7 +1,7 @@
 #include "./../include/rmpi.h"
 
 static uint16_t port = 0;
-static comm_t COMM_WORLD = NULL;
+static rmpi_comm_t COMM_WORLD = NULL;
 static char log_buffer[LOG_BUFFER_SIZE];
 
 struct netconfig *nconf;
@@ -20,6 +20,7 @@ void rmpi_init(int *argc, char ***argv, uint8_t debug) {
   rmpi_get_ports(COMM_WORLD);
   rmpi_print_comm(COMM_WORLD);
   sleep(RMPI_INIT_SLEEP);
+  rmpi_log_sys("Init complete");
 }
 
 void rmpi_finilize() {
@@ -30,12 +31,15 @@ void rmpi_finilize() {
       close(COMM_WORLD->hosts[i].sock);
     }
   }
+  rmpi_queue_free(COMM_WORLD->recvq);
+  COMM_WORLD->rmpi_receiver_shutdown = 1;
+  pthread_join(COMM_WORLD->recvt, NULL);
   rmpi_log_sys("Finalize");
 }
 
-comm_t rmpi_get_comm_world() { return COMM_WORLD; }
+rmpi_comm_t rmpi_get_comm_world() { return COMM_WORLD; }
 
-void rmpi_print_comm(comm_t comm) {
+void rmpi_print_comm(rmpi_comm_t comm) {
   int64_t i = 0;
   if (!comm) {
     rmpi_log_fatal("Communicator is NULL");
@@ -58,7 +62,7 @@ void rmpi_parse_params(int *argc, char ***argv) {
   if (*argc < 3) {
     rmpi_log_fatal("Not enouth args");
   }
-  COMM_WORLD = (comm_t)malloc(sizeof(comm_t));
+  COMM_WORLD = (rmpi_comm_t)malloc(sizeof(struct rmpi_comm));
   if (!COMM_WORLD) {
     rmpi_log_fatal("Cannot create world communicator");
   }
@@ -76,13 +80,20 @@ void rmpi_parse_params(int *argc, char ***argv) {
   rmpi_log_sys(log_buffer);
   COMM_WORLD->commsize = comm;
   COMM_WORLD->myrank = rank;
-  COMM_WORLD->hosts =
-      (hosts_list_t *)malloc(COMM_WORLD->commsize * sizeof(hosts_list_t));
+  COMM_WORLD->rmpi_receiver_shutdown = 0;
+  COMM_WORLD->hosts = (rmpi_hosts_list_t *)malloc(COMM_WORLD->commsize *
+                                                  sizeof(struct rmpi_hosts_list));
+                                                  
+  if (!COMM_WORLD->hosts) {
+    rmpi_log_fatal("Cannot allocate hosts");
+  }                       
+  COMM_WORLD->recvt = -1;
+  COMM_WORLD->recvq = rmpi_queue_init();
   for (i = 0; i < comm; ++i) {
     COMM_WORLD->hosts[i].rank = i;
     COMM_WORLD->hosts[i].host.addr =
-        (char *)malloc(INET_ADDRSTRLEN * sizeof(char));
-    strcpy(COMM_WORLD->hosts[i].host.addr, (*argv)[3 + i]);
+        (char *)malloc(INET_ADDRSTRLEN * sizeof(char) + 1);
+    memcpy(COMM_WORLD->hosts[i].host.addr, (*argv)[3 + i], 16);
     COMM_WORLD->hosts[i].host.port = 0;
     COMM_WORLD->hosts[i].sock = -1;
   }
@@ -94,11 +105,14 @@ void rmpi_parse_params(int *argc, char ***argv) {
   }
 }
 
-void rmpi_create_socket(comm_t comm) {
-  COMM_WORLD->mysock = rmpi_create_server_socket();
+void rmpi_create_socket(rmpi_comm_t comm) {
+  comm->mysock = rmpi_create_server_socket();
+  rmpi_receiver_args_t *a = (rmpi_receiver_args_t *)malloc(sizeof(struct rmpi_receiver_args));
+  a->comm = COMM_WORLD;
+  pthread_create(&COMM_WORLD->recvt, NULL, rmpi_receiver, a);
 }
 
-int64_t rmpi_get_index_by_rank(int64_t rank, comm_t comm) {
+int64_t rmpi_get_index_by_rank(int64_t rank, rmpi_comm_t comm) {
   int64_t i = 0;
   int64_t index = -1;
   for (i = 0; i < comm->commsize; ++i) {
@@ -110,7 +124,15 @@ int64_t rmpi_get_index_by_rank(int64_t rank, comm_t comm) {
   return index;
 }
 
-int32_t rmpi_create_client_socket(int64_t rank, comm_t comm) {
+int32_t rmpi_destroy_client_socket(int64_t rank, rmpi_comm_t comm) {
+  int64_t index = rmpi_get_index_by_rank(rank, comm);
+  if (comm->hosts[index].sock > 0) {
+    close(comm->hosts[index].sock);
+  }
+  return 0;
+}
+
+int32_t rmpi_create_client_socket(int64_t rank, rmpi_comm_t comm) {
   int32_t socketfd = -1;
   struct in_addr server_addr_inaddr;
   struct hostent *host = NULL;
@@ -202,7 +224,7 @@ char **get_port(indata_p) int *indata_p;
   return &res;
 }
 
-void rmpi_get_ports(comm_t comm) {
+void rmpi_get_ports(rmpi_comm_t comm) {
   if (!comm) {
     rmpi_log_fatal("Communicator is NULL");
   }
@@ -218,19 +240,19 @@ int32_t rmpi_get_port(char *host, int64_t rank) {
   int stat;
   int arg = 0;
   char *answer = malloc(6 * sizeof(char));
-  for (i = 0; i < RMTTRIESLIMIT; ++i) {
+  for (i = 0; i < RMPI_RMTTRIESLIMIT; ++i) {
     sprintf(log_buffer, "Call rpc rank %d to %d on %s", COMM_WORLD->myrank,
             rank, host);
     rmpi_log_sys(log_buffer);
-    if (stat = callrpc(host, RMTPROGNUM, rank, RMTPROGPROC, xdr_int, &arg,
-                       xdr_wrapstring, &answer) != 0) {
+    if (stat = callrpc(host, RMPI_RMTPROGNUM, rank, RMPI_RMTPROGPROC, xdr_int,
+                       &arg, xdr_wrapstring, &answer) != 0) {
       clnt_perrno(stat);
-      usleep(RMTTRIESSLEEP);
+      usleep(RMPI_RMTTRIESSLEEP);
     } else {
       break;
     }
   }
-  if (i >= RMTTRIESLIMIT) {
+  if (i >= RMPI_RMTTRIESLIMIT) {
     sprintf(log_buffer, "Failed call rpc, rank %d to %d on %s",
             COMM_WORLD->myrank, rank, host);
     rmpi_log_fatal(log_buffer);
@@ -239,8 +261,8 @@ int32_t rmpi_get_port(char *host, int64_t rank) {
 }
 
 int32_t rmpi_register() {
-  registerrpc(RMTPROGNUM, COMM_WORLD->myrank, RMTPROGPROC, get_port, xdr_int,
-              xdr_wrapstring);
+  registerrpc(RMPI_RMTPROGNUM, COMM_WORLD->myrank, RMPI_RMTPROGPROC, get_port,
+              xdr_int, xdr_wrapstring);
   pthread_t tid = 0;
   pthread_create(&tid, NULL, start_svc, NULL);
   pthread_detach(tid);
@@ -249,6 +271,6 @@ int32_t rmpi_register() {
   return 0;
 }
 
-int64_t rmpi_get_rank(comm_t comm) { return comm->myrank; }
+int64_t rmpi_get_rank(rmpi_comm_t comm) { return comm->myrank; }
 
-int64_t rmpi_get_commsize(comm_t comm) { return comm->commsize; }
+int64_t rmpi_get_commsize(rmpi_comm_t comm) { return comm->commsize; }

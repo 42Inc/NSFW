@@ -35,6 +35,7 @@ ${OBJ_PATH}/%.o: ${SRC_PATH}/%.c
 
 .PHONY: clean 
 clean:
+	make -C lib clean
 	rm -rf ${BIN_PATH}/*
 	rm -rf ${OBJ_PATH}/*
 

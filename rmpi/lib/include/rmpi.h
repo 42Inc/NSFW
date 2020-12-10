@@ -23,12 +23,13 @@
 #include "./rmpi_logger.h"
 
 /* Define remote program number and version */
-#define RMTPROGNUM (u_long)0x3fffffffL
-#define RMTPROGVER (u_long)0x1
-#define RMTPROGPROC (u_long)0x1
-#define RMTTRIESLIMIT 5
-#define RMTTRIESSLEEP 200000
+#define RMPI_RMTPROGNUM (u_long)0x3fffffffL
+#define RMPI_RMTPROGVER (u_long)0x1
+#define RMPI_RMTPROGPROC (u_long)0x1
+#define RMPI_RMTTRIESLIMIT 5
+#define RMPI_RMTTRIESSLEEP 200000
 
+#define RMPI_MAX_TRANSFER_UNIT 1000
 #define RMPI_INIT_SLEEP 2
 
 #define RMPI_SEND_TIMEOUT 10
@@ -41,22 +42,48 @@
 typedef struct {
   uint16_t port;
   char *addr;
-} host_t;
+} rmpi_host_t;
 
-typedef struct {
+typedef struct rmpi_hosts_list {
   int64_t rank;
   int32_t sock;
-  host_t host;
+  rmpi_host_t host;
   struct sockaddr_in server_addr;
   socklen_t server_addr_length;
-} hosts_list_t;
+} rmpi_hosts_list_t;
 
-typedef struct {
+typedef struct rmpi_q_el {
+  struct rmpi_q_el *next;
+  size_t size;
+  int64_t rank;
+  void *message;
+} * rmpi_q_el_t;
+
+typedef struct rmpi_queue {
+  rmpi_q_el_t head;
+  rmpi_q_el_t end;
+  int64_t len;
+  pthread_mutex_t locker;
+} * rmpi_queue_t;
+
+typedef struct rmpi_comm {
   int64_t commsize;
   int64_t myrank;
   int32_t mysock;
-  hosts_list_t *hosts;
-} * comm_t;
+  pthread_t recvt;
+  char rmpi_receiver_shutdown;
+  rmpi_hosts_list_t *hosts;
+  rmpi_queue_t *recvq;
+} * rmpi_comm_t;
+
+typedef struct rmpi_receiver_args {
+  rmpi_comm_t comm;
+} rmpi_receiver_args_t;
+
+typedef struct {
+  int64_t rank;
+  char message[RMPI_MAX_TRANSFER_UNIT - sizeof(int64_t)];
+} rmpi_pack_t;
 
 #define RMPI_TYPE_CHAR sizeof(signed char)
 #define RMPI_TYPE_SHORT sizeof(signed short int)
@@ -71,12 +98,12 @@ typedef struct {
 #define RMPI_TYPE_DOUBLE sizeof(double)
 #define RMPI_TYPE_LONG_DOUBLE sizeof(long double)
 
-int32_t rmpi_bcast(void *msg, int64_t count, size_t type, int64_t src, int64_t tag,
-               comm_t comm);
-int32_t rmpi_send(void *msg, int64_t count, size_t type, int64_t dst, int64_t tag,
-              comm_t comm);
-int32_t rmpi_recv(void *msg, int64_t count, size_t type, int64_t src, int64_t tag,
-              comm_t comm);
+int32_t rmpi_bcast(void *msg, int64_t count, size_t type, int64_t src,
+                   int64_t tag, rmpi_comm_t comm);
+int32_t rmpi_send(void *msg, int64_t count, size_t type, int64_t dst,
+                  int64_t tag, rmpi_comm_t comm);
+int32_t rmpi_recv(void *msg, int64_t count, size_t type, int64_t src,
+                  int64_t tag, rmpi_comm_t comm);
 void rmpi_init(int *argc, char ***argv, uint8_t debug);
 void rmpi_parse_params(int *argc, char ***argv);
 int32_t rmpi_register();
@@ -84,14 +111,20 @@ void rmpi_finilize();
 void *start_svc();
 uint16_t rmpi_server();
 int32_t rmpi_get_port(char *host, int64_t rank);
-void rmpi_create_socket(comm_t comm);
+void rmpi_create_socket(rmpi_comm_t comm);
 int32_t rmpi_create_server_socket();
-int32_t rmpi_create_client_socket(int64_t rank, comm_t comm);
-void rmpi_get_ports(comm_t comm);
-void rmpi_print_comm(comm_t comm);
-comm_t rmpi_get_comm_world();
-int64_t rmpi_get_index_by_rank(int64_t rank, comm_t comm);
-int64_t rmpi_get_rank(comm_t comm);
-int64_t rmpi_get_commsize(comm_t comm);
+int32_t rmpi_create_client_socket(int64_t rank, rmpi_comm_t comm);
+int32_t rmpi_destroy_client_socket(int64_t rank, rmpi_comm_t comm);
+void rmpi_get_ports(rmpi_comm_t comm);
+void rmpi_print_comm(rmpi_comm_t comm);
+rmpi_comm_t rmpi_get_comm_world();
+int64_t rmpi_get_index_by_rank(int64_t rank, rmpi_comm_t comm);
+int64_t rmpi_get_rank(rmpi_comm_t comm);
+int64_t rmpi_get_commsize(rmpi_comm_t comm);
+void *rmpi_receiver(void *args);
 
+rmpi_queue_t rmpi_queue_init();
+void rmpi_queue_free(rmpi_queue_t q);
+void rmpi_queue_push(rmpi_queue_t q, void *message, int64_t rank, size_t size);
+void *rmpi_queue_pop(rmpi_queue_t q, int64_t rank);
 #endif
