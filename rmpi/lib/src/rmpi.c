@@ -83,10 +83,10 @@ void rmpi_parse_params(int *argc, char ***argv) {
   COMM_WORLD->rmpi_receiver_shutdown = 0;
   COMM_WORLD->hosts = (rmpi_hosts_list_t *)malloc(COMM_WORLD->commsize *
                                                   sizeof(struct rmpi_hosts_list));
-                                                  
+
   if (!COMM_WORLD->hosts) {
     rmpi_log_fatal("Cannot allocate hosts");
-  }                       
+  }
   COMM_WORLD->recvt = -1;
   COMM_WORLD->recvq = rmpi_queue_init();
   for (i = 0; i < comm; ++i) {
@@ -141,7 +141,7 @@ int32_t rmpi_create_client_socket(int64_t rank, rmpi_comm_t comm) {
     return -1;
   }
   // Requesting socket from system
-  if ((socketfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0) {
+  if ((socketfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
     rmpi_log_fatal("Socket creation failed");
   }
   comm->hosts[index].server_addr_length =
@@ -174,7 +174,7 @@ int32_t rmpi_create_server_socket() {
   int32_t socketfd = -1;
 
   // Requesting socket from system
-  if ((socketfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0) {
+  if ((socketfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
     rmpi_log_fatal("Socket creation failed");
   }
 
@@ -204,7 +204,12 @@ int32_t rmpi_create_server_socket() {
   port = ntohs(serv_addr.sin_port);
   sprintf(log_buffer, "Binded to %s:%d", serv_addr_v4, port);
   rmpi_log_sys(log_buffer);
+  if (listen(socketfd, 10) < 0) {
+    rmpi_log_sys("Listen failed");
+  }
+  fcntl(socketfd, F_SETFL, FNDELAY | fcntl(socketfd, F_GETFL, 0));
   rmpi_log_sys("Ready for connections...");
+
   return socketfd;
 }
 

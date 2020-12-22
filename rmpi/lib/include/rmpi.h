@@ -73,7 +73,7 @@ typedef struct rmpi_comm {
   pthread_t recvt;
   char rmpi_receiver_shutdown;
   rmpi_hosts_list_t *hosts;
-  rmpi_queue_t *recvq;
+  rmpi_queue_t recvq;
 } * rmpi_comm_t;
 
 typedef struct rmpi_receiver_args {
@@ -122,6 +122,7 @@ int64_t rmpi_get_index_by_rank(int64_t rank, rmpi_comm_t comm);
 int64_t rmpi_get_rank(rmpi_comm_t comm);
 int64_t rmpi_get_commsize(rmpi_comm_t comm);
 void *rmpi_receiver(void *args);
+void *rmpi_client_tcp_connection(void *args);
 
 rmpi_queue_t rmpi_queue_init();
 void rmpi_queue_free(rmpi_queue_t q);

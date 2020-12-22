@@ -2,8 +2,9 @@ CC := gcc
 BIN_PATH := ./bin
 SRC_PATH := ./src
 INC_PATH := ./include
+RPC_PATH := /usr/include/tirpc
 OBJ_PATH := ./obj
-STD := -std=c99 
+STD := -std=c99
 DEBUG := -g3
 CFLAGS := ${DEBUG} -pthread -ltirpc
 
@@ -24,26 +25,26 @@ VERSION_RELEASE := ${GIT_TAG}.${GIT_COMMIT}
 
 
 .PHONY: all
-.PHONY: DIRECTORY 
+.PHONY: DIRECTORY
 all: DIRECTORY VARS ${SERVICE}
 
-VARS: 
-	sed 's/%%VERSION_RELEASE%%/${VERSION_RELEASE}/g' ${SRC_PATH}/constants.c.tpl > ${SRC_PATH}/constants.c 
+VARS:
+	sed 's/%%VERSION_RELEASE%%/${VERSION_RELEASE}/g' ${SRC_PATH}/constants.c.tpl > ${SRC_PATH}/constants.c
 
 ${SERVICE}: ${OBJECTS}
-	${AR} rvs $@ $^ 
+	${AR} rvs $@ $^
 
 DIRECTORY: ${OBJ_PATH}
 ${OBJ_PATH}:
 	$(if ifeq test -d "${OBJ_PATH}" 0, @mkdir -p ${OBJ_PATH})
 
 ${OBJ_PATH}/%.o: ${SRC_PATH}/%.c
-	${CC} -c $< -o $@ ${STD} ${CFLAGS} -I ${INC_PATH}
+	${CC} -c $< -o $@ ${STD} ${CFLAGS} -I ${INC_PATH} -I ${RPC_PATH}
 
-.PHONY: clean 
+.PHONY: clean
 clean:
 	rm -rf ${BIN_PATH}/*
 	rm -rf ${OBJ_PATH}/*
 
-.PHONY: restruct 
+.PHONY: restruct
 restruct: clean all
