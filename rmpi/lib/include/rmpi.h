@@ -73,7 +73,7 @@ typedef struct rmpi_comm {
   pthread_t recvt;
   char rmpi_receiver_shutdown;
   rmpi_hosts_list_t *hosts;
-  rmpi_queue_t *recvq;
+  rmpi_queue_t recvq;
 } * rmpi_comm_t;
 
 typedef struct rmpi_receiver_args {
