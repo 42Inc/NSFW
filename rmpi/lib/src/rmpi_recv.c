@@ -108,7 +108,8 @@ void *rmpi_client_tcp_connection(void *args) {
 
     if (retval < 0 && errno != EINTR) {
       close(sock);
-      rmpi_log_fatal("Failed to pselect from socket");
+      sh = 1;
+      rmpi_log_err("Failed to pselect from socket");
     } else if (retval && errno != EINTR) {
       bytes = recvfrom(sock, &pack, RMPI_MAX_TRANSFER_UNIT, MSG_DONTWAIT, NULL, NULL);
       if (bytes > 0) {
@@ -119,7 +120,7 @@ void *rmpi_client_tcp_connection(void *args) {
         rmpi_log_info(log_buffer);
         bytes = sendto(sock, &bytes, sizeof(bytes), MSG_DONTWAIT, NULL, -1);
       }
-    } else sh = 1;
+    }
   }
 
   rmpi_log_sys("Stopping TCP connection...");
