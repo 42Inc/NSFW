@@ -213,8 +213,6 @@ int32_t rmpi_create_server_socket() {
   return socketfd;
 }
 
-uint16_t rmpi_server(char *p) { return port; }
-
 void *start_svc() {
   svc_run();
   return NULL;
