@@ -24,15 +24,6 @@ int main(int argc, char **argv) {
 
   sprintf(log_buffer, "Rank %d/%d [Bcast rank %s]", rank, commsize, message);
   logInfo(log_buffer);
-  if (rank == 1) {
-    sprintf(message, "%d", rank);
-    rmpi_send(message, 10, RMPI_TYPE_CHAR, 0, 0, RMPI_COMM_WORLD);
-  }
-  if (rank == 0) {
-    rmpi_recv(message, 10, RMPI_TYPE_CHAR, 1, 0, RMPI_COMM_WORLD);
-  }
-  sprintf(log_buffer, "Rank %d/%d [Diff rank %s]", rank, commsize, message);
-  logInfo(log_buffer);
 
   logSys("Sleep");
   sleep(5);

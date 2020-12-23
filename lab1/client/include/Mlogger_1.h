@@ -1,5 +1,6 @@
 #ifndef M_LOGGER_H
 #define M_LOGGER_H
+#include "./colorlib.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,6 +13,7 @@ void logErr(char* msg);
 void logWarn(char* msg);
 void logSys(char* msg);
 void logFatal(char* msg);
+void logPlannedFatal(char* msg);
 void setLogFile(char* file);
 void setLogLevel(int l);
 void closeLogFile(char* file);

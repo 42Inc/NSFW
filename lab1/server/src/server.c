@@ -25,8 +25,6 @@ void sighandler(int s) {
 
 int main(int argc, char **argv) {
   logSys("Started server");
-  sprintf(logBuffer, "Server Vesrion %s", VERSION);
-  logSys(logBuffer);
   parseParams(argc, argv);
   setLogLevel(4);
   return startUDPServer();
@@ -103,8 +101,7 @@ int startUDPServer() {
     msgLen = n - msgIndex;
     memcpy(&msgCode, &msg[msgCodeIndex], sizeof(unsigned long int));
     memcpy(&msgUUID, &msg[msgUUIDIndex], sizeof(unsigned long int));
-    sprintf(logBuffer, "Receive %lu (%d[%d]) from %lu", msgCode, n, msgLen,
-            msgUUID);
+    sprintf(logBuffer, "REC %lu [%d] FOR %lu", msgCode, n, msgUUID);
     logInfo(logBuffer);
     logInfo(&msg[msgIndex]);
 
@@ -120,13 +117,12 @@ int startUDPServer() {
     sprintf(&msg[msgIndex], "Ack %d [%d]", msgCode, msgUUID);
     msgLen = msgIndex + strlen(&msg[msgIndex]);
     // Constructing reply
-    sprintf(logBuffer, "Send %lu (%d[%d]) for %lu", msgCode, n, msgLen,
-            msgUUID);
+    sprintf(logBuffer, "SEND %lu [%d] FROM <%lu>", msgCode, strlen(&msg[msgIndex]), msgUUID);
     logInfo(logBuffer);
     logInfo(&msg[msgIndex]);
-    // if (msgCode != 3)
-    n = sendto(socketfd, (message_t)msg, msgLen, MSG_DONTWAIT,
-               (struct sockaddr *)&clAddr, clAddrLength);
+    if (msgCode != 3)
+    	n = sendto(socketfd, (message_t)msg, msgLen, MSG_DONTWAIT,
+        	(struct sockaddr *)&clAddr, clAddrLength);
   }
 
   logSys("Stopping server...");

@@ -13,8 +13,6 @@ char servAddr_v4[INET_ADDRSTRLEN];
 
 int main(int argc, char **argv) {
   logSys("Started client");
-  sprintf(logBuffer, "Client Vesrion %s", VERSION);
-  logSys(logBuffer);
   parseParams(argc, argv);
   setLogLevel(4);
   return startUDPClient();
@@ -86,8 +84,7 @@ int startUDPClient() {
     memcpy(&msg[msgUUIDIndex], &msgUUID, sizeof(unsigned long int));
     strcpy(&msg[msgIndex], "echo");
     msgLen = msgIndex + strlen(&msg[msgIndex]);
-    sprintf(logBuffer, "Send %lu (%d[%d]) from %lu", msgCode, msgLen,
-            strlen(&msg[msgIndex]), msgUUID);
+    sprintf(logBuffer, "SEND %lu [%d] FROM <%lu>", msgCode, strlen(&msg[msgIndex]), msgUUID);
     logInfo(logBuffer);
     logInfo(&msg[msgIndex]);
     // Sending message
@@ -101,20 +98,19 @@ int startUDPClient() {
       n = recvfrom(socketfd, (message_t)msg, MU, MSG_WAITALL,
                    (struct sockaddr *)&servAddr, &servAddrLength);
       if (n <= 0) {
-        logErr("Received message length <= 0");
+        logErr("RECV MSG <= 0");
       } else {
         // Decoding receive message
         msgLen = n - msgIndex;
         memcpy(&msgCode, &msg[msgCodeIndex], sizeof(unsigned long int));
         memcpy(&msgUUID, &msg[msgUUIDIndex], sizeof(unsigned long int));
-        sprintf(logBuffer, "Receive %lu (%d[%d]) for %lu", msgCode, n, msgLen,
-                msgUUID);
+        sprintf(logBuffer, "REC %lu [%d] FOR %lu", msgCode, n, msgUUID);
         logInfo(logBuffer);
         logInfo(&msg[msgIndex]);
         if (msgCode != i) {
           ++currentTry;
           if (currentTry >= MAXX_TRIES) {
-            logFatal("Transmition is impossible");
+            logFatal("Trans is impossible");
           }
           sprintf(logBuffer,
                   "Receive ack for wrong packet (Exept %d, Recv %d), try %d", i,
@@ -127,9 +123,9 @@ int startUDPClient() {
     } else {
       ++currentTry;
       if (currentTry >= MAXX_TRIES) {
-        logFatal("Transmition is impossible");
+        logFatal("FAIL TO SEND-RECV");
       }
-      sprintf(logBuffer, "Dont't receive ack for %d, try %d", msgCode,
+      sprintf(logBuffer, "ERROR FOR <%d>, TRY <%d>", msgCode,
               currentTry);
       logWarn(logBuffer);
       --i;

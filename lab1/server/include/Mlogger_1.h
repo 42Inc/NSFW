@@ -1,5 +1,6 @@
 #ifndef M_LOGGER_H
 #define M_LOGGER_H
+#include "./colorlib.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

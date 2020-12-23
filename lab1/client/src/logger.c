@@ -3,34 +3,30 @@ static FILE* stream = NULL;
 static int level = 2;
 
 void logInfo(char* msg) {
-  char* date = getDate();
+
   if (level > 3) {
-    fprintf(stream ? stream : stderr, "%s [INFO]: %s\n", date, msg);
+    fprintf(stream ? stream : stderr, "%s[INFO]%s: %s\n", BLUE, RESET, msg);
   }
 }
 
 void logErr(char* msg) {
-  char* date = getDate();
   if (level > 1) {
-    fprintf(stream ? stream : stderr, "%s [ERROR]: %s\n", date, msg);
+    fprintf(stream ? stream : stderr, "%s[ERROR]%s: %s\n", RED, RESET, msg);
   }
 }
 
 void logWarn(char* msg) {
-  char* date = getDate();
   if (level > 2) {
-    fprintf(stream ? stream : stderr, "%s [WARN]: %s\n", date, msg);
+    fprintf(stream ? stream : stderr, "%s[WARN]%s: %s\n", YELLOW, RESET, msg);
   }
 }
 
 void logSys(char* msg) {
-  char* date = getDate();
-  fprintf(stream ? stream : stderr, "%s [SYS]: %s\n", date, msg);
+  fprintf(stream ? stream : stderr, "%s[SYS]%s: %s\n", GREEN, RESET, msg);
 }
 
 void logFatal(char* msg) {
-  char* date = getDate();
-  fprintf(stream ? stream : stderr, "%s [FATAL]: %s\n", date, msg);
+  fprintf(stream ? stream : stderr, "%s[FATAL]%s: %s\n", RED, RESET, msg);
   exit(1);
 }
 
@@ -47,18 +43,4 @@ void closeLogFile(char* file) {
   if (stream) {
     fclose(stream);
   }
-}
-
-char* getDate() {
-  time_t rawtime;
-  struct tm* timeinfo;
-  char* date = NULL;
-  int len = 0;
-  time(&rawtime);
-  timeinfo = localtime(&rawtime);
-  date = asctime(timeinfo);
-  len = strlen(date) - 1;
-  len = len < 0 ? 0 : len;
-  date[len] = '\0';
-  return date;
 }

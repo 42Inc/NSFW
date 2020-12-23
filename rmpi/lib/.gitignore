@@ -1,4 +1,0 @@
-*.a
-/obj
-/bin
-/src/constants.c
